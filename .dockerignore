@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+mage_data
+**/__pycache__
+**/*.pyc
+**/.cache
+**/.ssh_tunnel
+data
+Data
+*.parquet
+pgdata
+*.db
+*.pem
+*.key
+*.p12
+*.pfx

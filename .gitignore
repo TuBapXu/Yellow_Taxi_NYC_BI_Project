@@ -1,0 +1,44 @@
+# Local connection settings; commit only the template.
+.env
+.env.*
+!.env.example
+
+# Mage runtime state and local connections.
+mage_data/
+**/.cache/
+**/.ssh_tunnel/
+*.log
+
+# Python generated files and virtual environments.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Raw datasets and local database files; keep small mock fixtures.
+Data/*
+data/*
+!data/mock/
+!data/mock/**
+*.parquet
+pgdata/
+*.db
+*.db-shm
+*.db-wal
+*.dump
+*.backup
+
+# dbt generated output.
+**/target/
+**/dbt_packages/
+**/logs/
+
+# Private keys and editor/OS artifacts.
+*.pem
+*.key
+*.p12
+*.pfx
+.idea/
+.DS_Store
+Thumbs.db
+~$*
