@@ -1,11 +1,15 @@
+# ==============================================================================
+# CẤU HÌNH KẾT NỐI I/O CHO MAGE.AI (TASK T01 - TTU)
+# Sử dụng biến môi trường nạp từ .env
+# ==============================================================================
 version: 0.1.1
 
 default:
-
-  POSTGRES_DBNAME: "{{ env_var('POSTGRES_DB') }}"
-  POSTGRES_HOST: "{{ env_var('POSTGRES_HOST') }}"
-  POSTGRES_PORT: "{{ env_var('POSTGRES_PORT') }}"
-  POSTGRES_USER: "{{ env_var('POSTGRES_USER') }}"
-  POSTGRES_PASSWORD: "{{ env_var('POSTGRES_PASSWORD') }}"
-
+  POSTGRES_CONNECT_TIMEOUT: 10
   POSTGRES_CONNECTION_METHOD: direct
+  POSTGRES_DBNAME: "{{ env_var('POSTGRES_DB', 'DW_DB') }}"
+  POSTGRES_HOST: "{{ env_var('POSTGRES_HOST', 'postgres') }}"
+  POSTGRES_PORT: "{{ env_var('POSTGRES_PORT', '5432') }}"
+  POSTGRES_USER: "{{ env_var('POSTGRES_USER', 'postgres') }}"
+  POSTGRES_PASSWORD: "{{ env_var('POSTGRES_PASSWORD', 'admin123') }}"
+  POSTGRES_SCHEMA: staging
