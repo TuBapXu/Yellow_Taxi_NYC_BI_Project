@@ -1,55 +1,78 @@
+# ==============================================================================
+# HẠ TẦNG DOCKER COMPOSE CHO DỰ ÁN KHO DỮ LIỆU NYC YELLOW TAXI (TASK T01 - TTU)
+# Dịch vụ gồm: PostgreSQL 16 (PostGIS) và Mage.ai tích hợp dbt-core + PyArrow
+# ==============================================================================
+
 services:
-
+  # ----------------------------------------------------------------------------
+  # 1. POSTGRESQL 16 VỚI EXTENSION POSTGIS (LƯU TRỮ STAGING VÀ SINGLE DDS)
+  # ----------------------------------------------------------------------------
   postgres:
-    image: postgres:17
+    # Dùng image chính thức của PostGIS trên nền PostgreSQL 16
+    image: postgis/postgis:16-3.4
     container_name: lab-postgres
-
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
+      POSTGRES_DB: ${POSTGRES_DB:-DW_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      # Thiết lập bảng mã chuẩn UTF-8 và Locale C để tối ưu hiệu năng sắp xếp
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    # Tinh chỉnh tham số PostgreSQL tối ưu cho xử lý dữ liệu lớn (108 triệu dòng)
+    command: >
+      postgres
+        -c shared_buffers=512MB
+        -c work_mem=64MB
+        -c maintenance_work_mem=256MB
+        -c effective_cache_size=1GB
+        -c max_connections=100
+        -c checkpoint_completion_target=0.9
+        -c wal_buffers=16MB
     ports:
-      - "5432:5432"
-
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
+      # Named volume lưu trữ dữ liệu bền vững qua các lần restart
       - pgdata:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d
-
+      # Mount thư mục chứa script DDL tự động thực thi khi khởi tạo database mới
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-DW_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-
+  # ----------------------------------------------------------------------------
+  # 2. MAGE.AI ORCHESTRATION ENGINE (TÍCH HỢP DBT, PYARROW VÀ GEOPANDAS)
+  # ----------------------------------------------------------------------------
   mage:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: lab-mage
-
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-
     env_file:
       - .env
-
     environment:
       USER_CODE_PATH: /home/src/lab_project
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-DW_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      DBT_PROFILES_DIR: /home/src/dbt_project
     ports:
       - "6789:6789"
-
     volumes:
+      # Mount toàn bộ mã nguồn dự án vào container
       - .:/home/src
-
+      # Mount thư mục dữ liệu thô (Parquet, CSV, Shapefile) ngoài host vào container
+      # Giúp task S01 của STINH đọc trực tiếp mà không cần copy tệp lớn vào container
+      - ../../Data:/home/src/external_data:ro
     command: /app/run_app.sh mage start lab_project
 
 volumes:
   pgdata:
+    name: yellow_taxi_pgdata

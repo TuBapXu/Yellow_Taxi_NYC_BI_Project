@@ -1,44 +1,108 @@
-# Local connection settings; commit only the template.
+# ==============================================================================
+# GITIGNORE CHO DỰ ÁN KHO DỮ LIỆU NYC YELLOW TAXI (NHÓM 09)
+# Đảm bảo an toàn bảo mật, loại bỏ dữ liệu thô lớn và file tạm sinh tự động
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. BẢO MẬT & THÔNG TIN KẾT NỐI (SECRETS & LOCAL ENV)
+# ------------------------------------------------------------------------------
+# Tuyệt đối không commit file chứa mật khẩu thật
 .env
 .env.*
 !.env.example
 
-# Mage runtime state and local connections.
+# SSH tunnels và khóa mã hóa
+**/.ssh_tunnel/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ------------------------------------------------------------------------------
+# 2. RUNTIME CỦA MAGE.AI & NHẬT KÝ THỰC THI (MAGE RUNTIME & LOGS)
+# ------------------------------------------------------------------------------
+# Thư mục lưu trạng thái và cache của Mage
 mage_data/
 **/.cache/
-**/.ssh_tunnel/
 *.log
+**/logs/
 
-# Python generated files and virtual environments.
-__pycache__/
+# ------------------------------------------------------------------------------
+# 3. PYTHON COMPILATION & MÔI TRƯỜNG ẢO
+# ------------------------------------------------------------------------------
+**/__pycache__/
 *.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
 .venv/
 venv/
+env/
+ENV/
 
-# Raw datasets and local database files; keep small mock fixtures.
+# ------------------------------------------------------------------------------
+# 4. DBT ARTIFACTS (BUILD OUTPUTS)
+# ------------------------------------------------------------------------------
+# dbt target và packages tự sinh khi dbt run/compile
+**/target/
+**/dbt_packages/
+**/dbt_modules/
+
+# ------------------------------------------------------------------------------
+# 5. DỮ LIỆU LỚN & DATABASE NỘI BỘ (RAW BIG DATA & LOCAL DB)
+# ------------------------------------------------------------------------------
+# Loại bỏ các tệp dữ liệu thô lớn (Parquet, Shapefile, ZIP, v.v.)
+*.parquet
+*.zip
+*.tar.gz
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+
+# Thư mục data lớn (giữ lại fixture nhỏ trong data/mock/ để kiểm thử)
 Data/*
 data/*
 !data/mock/
 !data/mock/**
-*.parquet
+
+# Local database volumes & dumps
 pgdata/
 *.db
 *.db-shm
 *.db-wal
 *.dump
 *.backup
+*.sql.gz
 
-# dbt generated output.
-**/target/
-**/dbt_packages/
-**/logs/
-
-# Private keys and editor/OS artifacts.
-*.pem
-*.key
-*.p12
-*.pfx
+# ------------------------------------------------------------------------------
+# 6. IDE, EDITOR & OS ARTIFACTS
+# ------------------------------------------------------------------------------
+.vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+
+# Hệ điều hành (Windows / macOS)
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+[Dd]esktop.ini
+
+# Tệp khóa tạm thời của Microsoft Office (Word, Excel)
 ~$*
+*.tmp
+
+# Không push tài liệu nội bộ
+docs/
+**/.user.yml
+
+docs/TASK_T01*

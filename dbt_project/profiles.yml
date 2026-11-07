@@ -1,0 +1,17 @@
+# ==============================================================================
+# CẤU HÌNH KẾT NỐI DBT PROFILE (TASK T01 - TTU)
+# Hỗ trợ chạy dbt cả từ bên trong container Mage lẫn trên máy host
+# ==============================================================================
+yellow_taxi_profile:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'postgres') }}"
+      user: "{{ env_var('POSTGRES_USER', 'postgres') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'admin123') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'DW_DB') }}"
+      schema: staging
+      threads: 4
+      keepalives_idle: 0

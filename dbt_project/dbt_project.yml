@@ -1,0 +1,46 @@
+# ==============================================================================
+# CẤU HÌNH DỰ ÁN DBT CHO DỰ ÁN NYC YELLOW TAXI DWH (TASK T01 - TTU)
+# Quản lý toàn bộ quá trình biến đổi dữ liệu theo chuẩn Single DDS
+# ==============================================================================
+name: 'yellow_taxi_dwh'
+version: '1.2.0'
+config-version: 2
+
+profile: 'yellow_taxi_profile'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# ------------------------------------------------------------------------------
+# PHÂN TẦNG VÀ CHIẾN LƯỢC MATERIALIZATION THEO THIẾT KẾ SINGLE DDS
+# ------------------------------------------------------------------------------
+models:
+  yellow_taxi_dwh:
+    # Tầng Staging (NBINH phụ trách B01, B02):
+    # - stg_yellow_trips: View chuẩn hóa kiểu dữ liệu và schema drift
+    # - stg_trips_flagged: View bổ sung bộ 3 cờ Usability và DataQualityFlags
+    staging:
+      +schema: staging
+      +materialized: view
+
+    # Tầng Marts / Single DDS:
+    marts:
+      # 8 Bảng chiều (STINH phụ trách S02): lưu trữ vật lý dạng Table
+      dims:
+        +schema: dds
+        +materialized: table
+
+      # Bảng Fact trung tâm (TTU phụ trách T02): nạp lũy tiến theo batch
+      facts:
+        +schema: dds
+        +materialized: incremental
+        +incremental_strategy: delete+insert
+        +unique_key: "TripKey"
