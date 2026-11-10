@@ -111,3 +111,6 @@ docs/TASK_T01*
 
 # File xuat ra tu Claude (zip, pdf gui nhom) - khong dua len Git
 Claude outputs/
+
+# File chay nhanh tren may ca nhan - khong dua len Git
+RUN_*.bat
