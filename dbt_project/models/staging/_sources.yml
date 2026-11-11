@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: staging
+    schema: staging
+    description: "Tầng raw do S01 (stinh) nạp từ 36 file Parquet, mọi cột nghiệp vụ dạng VARCHAR."
+    tables:
+      - name: raw_yellow_trips
+        description: "19 cột thô + 5 cột lineage; source_row_number liên tục 1..N theo từng file."
+        columns:
+          - name: source_file_sha256
+            data_tests: [not_null]
+          - name: source_row_number
+            data_tests: [not_null]
+      - name: quarantine
+        description: "Bảng cách ly lỗi chuyển kiểu (T01). B01 ghi qua macro load_quarantine."

@@ -11,6 +11,8 @@ services:
     # Dùng image chính thức của PostGIS trên nền PostgreSQL 16
     image: postgis/postgis:16-3.4
     container_name: lab-postgres
+    # Tang /dev/shm (mac dinh Docker 64MB) cho truy van song song tren hang trieu dong
+    shm_size: 1gb
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-DW_DB}
@@ -64,7 +66,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
       DBT_PROFILES_DIR: /home/src/dbt_project
     ports:
-      - "6789:6789"
+      - "${MAGE_PORT:-6789}:6789"
     volumes:
       # Mount toàn bộ mã nguồn dự án vào container
       - .:/home/src

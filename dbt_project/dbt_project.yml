@@ -44,3 +44,78 @@ models:
         +materialized: incremental
         +incremental_strategy: delete+insert
         +unique_key: "TripKey"
+
+# ------------------------------------------------------------------------------
+# SEEDS GIẢ LẬP CHO KIỂM THỬ B01 (NBINH) - nạp vào schema staging
+# Cột nghiệp vụ giữ dạng chuỗi giống hệt staging.raw_yellow_trips để kiểm thử ép kiểu
+# ------------------------------------------------------------------------------
+seeds:
+  yellow_taxi_dwh:
+    +schema: staging
+    mock_yellow_trips:
+      +column_types: &raw_text_cols
+        source_row_number: bigint
+        vendor_id: varchar(50)
+        tpep_pickup_datetime: varchar(50)
+        tpep_dropoff_datetime: varchar(50)
+        passenger_count: varchar(50)
+        trip_distance: varchar(50)
+        rate_code_id: varchar(50)
+        store_and_fwd_flag: varchar(50)
+        pu_location_id: varchar(50)
+        do_location_id: varchar(50)
+        payment_type: varchar(50)
+        fare_amount: varchar(50)
+        extra: varchar(50)
+        mta_tax: varchar(50)
+        tip_amount: varchar(50)
+        tolls_amount: varchar(50)
+        improvement_surcharge: varchar(50)
+        total_amount: varchar(50)
+        congestion_surcharge: varchar(50)
+        airport_fee: varchar(50)
+    mock_cast_edge_cases:
+      +column_types: *raw_text_cols
+    mock_expected_stg_yellow_trips:
+      +column_types:
+        source_file_name: varchar(255)
+        source_row_number: bigint
+        expect_in_stg: boolean
+        expect_quarantine_reason: varchar(100)
+        expect_passenger_count: integer
+        expect_store_and_fwd_flag: varchar(1)
+        expect_trip_duration_seconds: numeric(20,6)
+        expect_vendor_id: integer
+        expect_rate_code_id: integer
+        expect_trip_distance: numeric(18,6)
+        expect_money_rounded_columns: text
+    mock_expected_flagged:
+      +column_types:
+        source_row_number: bigint
+        is_time_usable: boolean
+        is_distance_usable: boolean
+        is_amount_usable: boolean
+        has_dq_issue: boolean
+        data_quality_flags: text
+        attribute_quality_flags: text
+        pickup_date_key: integer
+        dropoff_date_key: integer
+        pickup_time_key: integer
+        dropoff_time_key: integer
+        pickup_zone_key: integer
+        dropoff_zone_key: integer
+        vendor_key: integer
+        payment_type_key: integer
+        rate_code_key: integer
+        passenger_group_key: integer
+        distance_band_key: integer
+        scenario: text
+
+vars:
+  # true: staging đọc từ seed giả lập thay vì staging.raw_yellow_trips (dbt ... --vars '{b01_use_mock: true}')
+  b01_use_mock: false
+  # Miền ngày hợp lệ (Data Contract v1.2 mục 2.2 / 3.1) - bao gồm hai biên; dùng chung cho B02 và DimDate (S02)
+  dq_date_domain_start: '2020-12-31'
+  dq_date_domain_end: '2024-01-01'
+  # Phiên bản rule DQ áp dụng đồng nhất ở stg_trips_flagged và Fact (B02)
+  dq_rule_version: 'v1.2'

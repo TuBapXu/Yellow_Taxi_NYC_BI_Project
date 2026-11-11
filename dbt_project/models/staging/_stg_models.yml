@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: stg_yellow_trips_typed
+    description: "Ép kiểu an toàn toàn bộ dòng raw + mảng cast_errors theo cột (nội bộ B01)."
+    columns:
+      - name: trip_id
+        data_tests: [not_null]
+
+  - name: stg_yellow_trips
+    description: "Giao diện staging chuẩn hóa theo Data Contract v1.2 mục 2.1 (chỉ dòng chuyển kiểu thành công)."
+    columns:
+      - name: trip_id
+        description: "MD5(source_file_sha256 || '_' || source_row_number) - CHAR(32), = TripKey ở Fact."
+        data_tests: [unique, not_null]
+      - name: store_and_fwd_flag
+        data_tests:
+          - accepted_values:
+              values: ['Y', 'N']
+      - name: source_file_name
+        data_tests: [not_null]
+      - name: source_file_sha256
+        data_tests: [not_null]
+      - name: source_row_number
+        data_tests: [not_null]
+      - name: load_batch_id
+        data_tests: [not_null]
+      - name: loaded_at_utc
+        data_tests: [not_null]
+
+  - name: stg_yellow_trips_rejects
+    description: "Dòng không chuyển kiểu được, đúng khuôn staging.quarantine."
+    columns:
+      - name: quarantine_reason
+        data_tests:
+          - not_null
+      - name: raw_payload
+        data_tests: [not_null]
