@@ -102,7 +102,15 @@ Thumbs.db
 *.tmp
 
 # Không push tài liệu nội bộ
-docs/
+docs/*
+# Ngoai le: contract staging B01 dung chung cho ca nhom
+!docs/data_contract_v1.md
 **/.user.yml
 
 docs/TASK_T01*
+
+# File xuat ra tu Claude (zip, pdf gui nhom) - khong dua len Git
+Claude outputs/
+
+# File chay nhanh tren may ca nhan - khong dua len Git
+RUN_*.bat

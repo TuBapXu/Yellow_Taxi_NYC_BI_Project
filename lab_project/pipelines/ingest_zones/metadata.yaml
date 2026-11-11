@@ -1,0 +1,42 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: ingest_spatial_zones
+  retry_config: null
+  status: not_executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: ingest_spatial_zones
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-11-05 10:00:00.000000+00:00'
+data_integration: null
+description: 'Task S01 (stinh): Pipeline nạp Zone Lookup CSV và Shapefile vào PostgreSQL Staging'
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: ingest_zones
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags:
+- S01
+- spatial
+type: python
+uuid: ingest_zones
+variables_dir: /home/src/mage_data/lab_project
+widgets: []
