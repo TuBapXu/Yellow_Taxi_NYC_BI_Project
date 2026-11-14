@@ -1,0 +1,43 @@
+source_file_name,source_row_number,is_time_usable,is_distance_usable,is_amount_usable,has_dq_issue,data_quality_flags,attribute_quality_flags,scenario
+mock_cast_edge_cases.csv,1,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,6,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,14,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,15,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,17,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,18,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,22,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,23,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,24,true,true,true,false,,,sach
+mock_cast_edge_cases.csv,7,true,true,true,false,,INVALID_STORE_AND_FWD_FLAG,store flag X
+mock_cast_edge_cases.csv,8,false,true,true,true,MISSING_TIME,,pickup NULL
+mock_cast_edge_cases.csv,10,false,true,true,true,DATE_OUT_OF_DOMAIN,,nam 2009
+mock_cast_edge_cases.csv,13,false,true,true,true,DURATION_OVER_24H,,24h + 0.5s
+mock_cast_edge_cases.csv,19,true,false,true,true,DISTANCE_OUTLIER,,100.000001 miles
+mock_cast_edge_cases.csv,20,true,true,true,false,,MONEY_ROUNDED,fare 12.345
+mock_cast_edge_cases.csv,21,true,true,false,true,NEGATIVE_TIP,MONEY_ROUNDED,tip -0.005 -> -0.01
+mock_dq_edge_cases.csv,1,true,true,true,false,,,total dung 5000
+mock_dq_edge_cases.csv,2,true,true,false,true,AMOUNT_OVER_5000,,total 5000.01
+mock_dq_edge_cases.csv,3,true,true,true,false,,,sai so dung 0.01
+mock_dq_edge_cases.csv,4,true,true,false,true,INCONSISTENT_TOTAL,,vuot sai so 0.01
+mock_dq_edge_cases.csv,5,true,true,false,true,ZERO_TOTAL_AMOUNT,,total 0
+mock_dq_edge_cases.csv,6,true,true,false,true,MISSING_TOTAL_AMOUNT,,total NULL
+mock_dq_edge_cases.csv,7,true,true,false,true,MISSING_FARE_AMOUNT,,fare NULL
+mock_dq_edge_cases.csv,8,true,true,false,true,MISSING_TIP_AMOUNT,,tip NULL
+mock_dq_edge_cases.csv,9,true,true,true,false,,,tolls NULL tinh 0
+mock_dq_edge_cases.csv,10,true,true,true,false,,INVALID_PASSENGER_COUNT,passenger 0
+mock_dq_edge_cases.csv,11,true,true,true,false,,INVALID_PASSENGER_COUNT,passenger 10
+mock_dq_edge_cases.csv,12,true,true,true,false,,,passenger 9
+mock_dq_edge_cases.csv,13,true,true,true,false,,,distance dung 100
+mock_dq_edge_cases.csv,14,true,false,true,true,NEGATIVE_DISTANCE,,distance am
+mock_dq_edge_cases.csv,15,true,false,true,true,MISSING_DISTANCE,,distance NULL
+mock_dq_edge_cases.csv,16,true,true,true,false,,,duration dung 24h
+mock_dq_edge_cases.csv,17,false,true,true,true,TIME_REVERSED,,dropoff = pickup
+mock_dq_edge_cases.csv,18,true,true,true,false,,MISSING_VENDOR,vendor NULL
+mock_dq_edge_cases.csv,19,true,true,true,false,,UNMAPPED_VENDOR,vendor 6
+mock_dq_edge_cases.csv,20,true,true,true,false,,UNMAPPED_RATE_CODE,rate 7
+mock_dq_edge_cases.csv,21,false,true,true,true,MISSING_TIME,,dropoff NULL
+mock_dq_edge_cases.csv,22,false,true,true,true,DATE_OUT_OF_DOMAIN;TIME_REVERSED,,2024-01-02 dao nguoc
+mock_dq_edge_cases.csv,23,true,false,false,true,NEGATIVE_FARE;NEGATIVE_TIP;ZERO_DISTANCE,,nhieu loi
+mock_dq_edge_cases.csv,24,true,true,true,false,,MISSING_STORE_AND_FWD_FLAG,store flag rong
+mock_dq_edge_cases.csv,25,true,true,false,true,INCONSISTENT_TOTAL;NEGATIVE_TOTAL_AMOUNT,,total am
+mock_dq_edge_cases.csv,26,false,true,true,true,DATE_OUT_OF_DOMAIN,,pickup 30/12/2020

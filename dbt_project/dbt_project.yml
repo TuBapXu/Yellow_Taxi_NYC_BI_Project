@@ -46,7 +46,7 @@ models:
         +unique_key: "TripKey"
 
 # ------------------------------------------------------------------------------
-# SEEDS GIẢ LẬP CHO KIỂM THỬ B01 (NBINH) - nạp vào schema staging
+# SEEDS GIẢ LẬP CHO KIỂM THỬ B01/B02 (NBINH) - nạp vào schema staging
 # Cột nghiệp vụ giữ dạng chuỗi giống hệt staging.raw_yellow_trips để kiểm thử ép kiểu
 # ------------------------------------------------------------------------------
 seeds:
@@ -76,6 +76,36 @@ seeds:
         airport_fee: varchar(50)
     mock_cast_edge_cases:
       +column_types: *raw_text_cols
+    # B02: ca biên DQ (tiền 5000/sai số 0.01, passenger 0/9/10, cự ly 100/âm/NULL, 24h, ngoài miền ngày, mã chưa ánh xạ)
+    mock_dq_edge_cases:
+      +column_types: *raw_text_cols
+    mock_expected_flagged_edge:
+      +column_types:
+        source_file_name: varchar(255)
+        source_row_number: bigint
+        is_time_usable: boolean
+        is_distance_usable: boolean
+        is_amount_usable: boolean
+        has_dq_issue: boolean
+        data_quality_flags: text
+        attribute_quality_flags: text
+        scenario: text
+    # B02: seed mapping dùng chung cho stg_trips_flagged (UNMAPPED_*) và DimVendor/DimRateCode (S02 - stinh)
+    seed_vendor_mapping:
+      +column_types:
+        vendor_id: integer
+        vendor_key: integer
+        vendor_name: varchar(100)
+        mapping_status: varchar(20)
+        mapping_version: varchar(32)
+    seed_rate_code_mapping:
+      +column_types:
+        rate_code_id: integer
+        rate_code_key: integer
+        rate_code_name: varchar(100)
+        rate_group: varchar(20)
+        mapping_status: varchar(20)
+        mapping_version: varchar(32)
     mock_expected_stg_yellow_trips:
       +column_types:
         source_file_name: varchar(255)

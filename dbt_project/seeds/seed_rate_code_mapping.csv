@@ -1,0 +1,8 @@
+rate_code_id,rate_code_key,rate_code_name,rate_group,mapping_status,mapping_version
+1,1,Standard rate,Standard,VERIFIED,v1.2
+2,2,JFK,Airport,VERIFIED,v1.2
+3,3,Newark,Airport,VERIFIED,v1.2
+4,4,Nassau or Westchester,Other,VERIFIED,v1.2
+5,5,Negotiated fare,Negotiated,VERIFIED,v1.2
+6,6,Group ride,Other,VERIFIED,v1.2
+99,99,Other / Unknown,Other,FIXTURE,v1.2
