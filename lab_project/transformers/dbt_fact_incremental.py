@@ -17,7 +17,11 @@ def dbt_fact_incremental(*args, **kwargs):
     - 13 Measures & 7 DQ Flags
     - Chiến lược delete+insert theo TripKey đảm bảo tính Idempotent
     """
-    root = Path(__file__).resolve().parents[2]
+    root = (
+        Path(__file__).resolve().parents[2]
+        if '__file__' in globals()
+        else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
+    )
     dbt_dir = root / 'dbt_project'
 
     t0 = time.time()

@@ -20,7 +20,11 @@ def record_benchmark_metrics(*args, **kwargs):
     mem_info = process.memory_info()
     ram_mb = round(mem_info.rss / (1024 * 1024), 2)
 
-    root = Path(__file__).resolve().parents[2]
+    root = (
+        Path(__file__).resolve().parents[2]
+        if '__file__' in globals()
+        else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
+    )
     benchmark_csv = root / 'benchmark_1m.csv'
 
     file_name = kwargs.get('file_pattern', 'yellow_tripdata_2021-01.parquet')

@@ -49,7 +49,11 @@ def check_or_ingest_zones(*args, **kwargs):
     print("[START] Đang nạp Zone Lookup CSV và Shapefile...")
     load_and_ingest_zones(*args, **kwargs)
 
-    root = Path(__file__).resolve().parents[2]
+    root = (
+        Path(__file__).resolve().parents[2]
+        if '__file__' in globals()
+        else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
+    )
     dbt_dir = root / 'dbt_project'
     print("[START] Đang build dds.DimZone bằng dbt...")
     subprocess.run(['dbt', 'run', '--select', 'marts.dims.DimZone'], cwd=dbt_dir, check=True)
