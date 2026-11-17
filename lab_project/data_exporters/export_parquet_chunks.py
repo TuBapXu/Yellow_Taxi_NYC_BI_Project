@@ -26,7 +26,7 @@ TARGET_STAGING_COLS = [
 # Câu lệnh COPY chuẩn hỗ trợ schema.table cho copy_expert
 COPY_SQL = f"""
     COPY staging.raw_yellow_trips ({', '.join(TARGET_STAGING_COLS)})
-    FROM STDIN WITH (FORMAT TEXT, DELIMITER E'\\t', NULL '\\N')
+    FROM STDIN WITH (FORMAT TEXT, DELIMITER E'\\t', NULL '')
 """
 
 # Thứ tự 18 cột đầu từ Parquet
@@ -173,9 +173,9 @@ def export_parquet_batches_to_staging(df_manifest: pd.DataFrame, *args, **kwargs
                             sep='\t',
                             header=False,
                             index=False,
-                            na_rep='\\N',
+                            na_rep='',
                             quoting=csv.QUOTE_NONE,
-                            escapechar='\\'
+                            
                         )
                         buf.seek(0)
 
