@@ -19,8 +19,8 @@ coded as (
         {{ dq_amount_codes('stg') }}   as amount_codes,
         {{ dq_attribute_codes(
             'stg',
-            'exists (select 1 from ' ~ ref('seed_vendor_mapping') ~ ' vm where vm.vendor_id = stg.vendor_id and ' ~ mapping_is_active('vm') ~ ')',
-            'exists (select 1 from ' ~ ref('seed_rate_code_mapping') ~ ' rm where rm.rate_code_id = stg.rate_code_id and ' ~ mapping_is_active('rm') ~ ')'
+            'stg.vendor_id in (select vm.vendor_id from ' ~ ref('seed_vendor_mapping') ~ ' vm where ' ~ mapping_is_active('vm') ~ ')',
+            'stg.rate_code_id in (select rm.rate_code_id from ' ~ ref('seed_rate_code_mapping') ~ ' rm where ' ~ mapping_is_active('rm') ~ ')'
         ) }}                           as attribute_codes
     from stg
 )

@@ -1,4 +1,5 @@
 import time
+import json
 import subprocess
 from pathlib import Path
 
@@ -20,8 +21,11 @@ def dbt_fact_incremental(*args, **kwargs):
     dbt_dir = root / 'dbt_project'
 
     t0 = time.time()
-    print("[START] Đang chạy dbt run --select FactTaxiTrip...")
+    target_file = kwargs.get('target_file') or kwargs.get('source_file_name')
+    print(f"[START] Đang chạy dbt run --select FactTaxiTrip (target_file={target_file})...")
     cmd = ['dbt', 'run', '--select', 'FactTaxiTrip']
+    if target_file:
+        cmd.extend(['--vars', json.dumps({'source_file_name': str(target_file)})])
     res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True)
     duration = round(time.time() - t0, 2)
 
