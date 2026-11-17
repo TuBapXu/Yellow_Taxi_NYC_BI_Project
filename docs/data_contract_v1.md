@@ -170,7 +170,7 @@ dbt test --select staging --profiles-dir .
 dbt run-operation load_quarantine --args '{prune_stale: true}' --profiles-dir .
 ```
 
-Trên Windows: bấm đúp `RUN_B01.bat` ở thư mục gốc dự án. Log được ghi vào `logs/b01_*.log`.
+Trên Windows: chạy `powershell -ExecutionPolicy Bypass -File scripts/run_b01.ps1` tại thư mục gốc dự án. Log được ghi vào `logs/b01_*.log`.
 
 ## 10. Tiêu chí nghiệm thu B01
 
@@ -182,7 +182,7 @@ Trên Windows: bấm đúp `RUN_B01.bat` ở thư mục gốc dự án. Log đư
 
 - **S01 ghi NULL thành chuỗi `\N`.** Trong `export_parquet_chunks.py`, lệnh `to_csv(na_rep='\\N', escapechar='\\')` escape luôn dấu `\`, nên lệnh `COPY` lưu chuỗi 2 ký tự `\N` thay vì NULL. Điều này trái Contract nguyên tắc 4 (raw phải giữ đúng dữ liệu nguồn).
   - B01 đã tự xử lý bằng cách coi `\N` là NULL.
-  - S01 vẫn nên sửa tận gốc rồi nạp lại raw (dùng `force_reload`).
+  - Bản sửa S02 đã được đưa vào working tree: `na_rep=''` và `COPY ... NULL ''`. Nghiệm thu dùng database riêng và nạp lại trực tiếp từ Parquet; database làm việc cũ không tự động được sửa dữ liệu.
 
 ---
 
@@ -221,8 +221,8 @@ Macro: `macros/dq_rules.sql` (`dq_time_codes`, `dq_distance_codes`, `dq_amount_c
 | | `AMOUNT_OVER_5000` | total > 5.000 |
 | | `INCONSISTENT_TOTAL` | `total + 0.01 < fare + tip + COALESCE(tolls, 0)` (chỉ kiểm khi total, fare, tip đều có) |
 | Thuộc tính | `MISSING_PASSENGER_COUNT` / `INVALID_PASSENGER_COUNT` | NULL / ≤ 0 hoặc > 9 |
-| | `MISSING_VENDOR` / `UNMAPPED_VENDOR` | NULL / không có trong `seed_vendor_mapping` |
-| | `MISSING_RATE_CODE` / `UNMAPPED_RATE_CODE` | NULL / không có trong `seed_rate_code_mapping` |
+| | `MISSING_VENDOR` / `UNMAPPED_VENDOR` | NULL / không có mapping đang được bật trong `seed_vendor_mapping` |
+| | `MISSING_RATE_CODE` / `UNMAPPED_RATE_CODE` | NULL / không có mapping đang được bật trong `seed_rate_code_mapping` |
 | | `MISSING_STORE_AND_FWD_FLAG` / `INVALID_STORE_AND_FWD_FLAG` | nguồn NULL / có giá trị nhưng khác Y, N |
 | | `MONEY_ROUNDED` | có cột tiền bị làm tròn về cent ở B01 (`money_rounded_columns`) |
 
@@ -233,7 +233,10 @@ Macro: `macros/dq_rules.sql` (`dq_time_codes`, `dq_distance_codes`, `dq_amount_c
 - `seed_vendor_mapping.csv`: VendorID 1 (CMT), 2 (VeriFone) — `VERIFIED`.
 - `seed_rate_code_mapping.csv`: RateCodeID 1–6 (`VERIFIED`) và 99 (`FIXTURE`, cần xác minh trước sản xuất).
 - `stg_trips_flagged` tra mapping bằng `EXISTS` nên không thể nhân dòng; không đọc bảng dimension.
-- **stinh:** DimVendor/DimRateCode phải dựng từ đúng hai seed này để mã `UNMAPPED_*` và FK = 0 nhất quán.
+- DimVendor/DimRateCode đọc trực tiếp hai seed trên; cùng `stg_trips_flagged` dùng macro `mapping_is_active`.
+- **Chốt tích hợp 17/11/2026:** dữ liệu thật (`b01_use_mock=false`) chỉ dùng mapping `VERIFIED`. RateCode 99 còn `FIXTURE`: gắn `UNMAPPED_RATE_CODE`, FK 0, giữ nguyên tiền và 3 cờ usable theo rule; không có dòng 99 trong DimRateCode thật.
+- Mock (`b01_use_mock=true`) cho phép `FIXTURE`: dòng 17 của contract nhận FK 99 và không có `UNMAPPED_RATE_CODE`. DimRateCode có **8 dòng khi mock, 7 dòng khi thật** (đều gồm khóa 0). DimVendor có 3 dòng; mã 5/6 chưa xác minh nhận FK 0.
+- Chỉ chuyển 99 sang `VERIFIED` khi có căn cứ xác minh và cập nhật kỳ vọng kiểm thử. Không sửa seed theo từng lần chạy.
 
 ### 12.4. Kiểm thử
 
@@ -251,3 +254,10 @@ Macro: `macros/dq_rules.sql` (`dq_time_codes`, `dq_distance_codes`, `dq_amount_c
 - Fact đọc `{{ ref('stg_trips_flagged') }}`; số dòng Fact phải bằng số dòng flagged trên cùng phạm vi.
 - Các cột cờ map sang PascalCase: `IsTimeUsable`, `IsDistanceUsable`, `IsAmountUsable`, `HasDQIssue`, `DataQualityFlags`, `AttributeQualityFlags`, `QualityRuleVersion`.
 - Khóa Fact kỳ vọng cho 18 dòng contract nằm sẵn trong `mock_expected_flagged.csv`.
+### 12.6. Cấu trúc Fact và nghiệm thu tích hợp (17/11/2026)
+
+- `dds."FactTaxiTrip"` giữ **40 cột**: 1 PK + 11 FK + 3 thuộc tính nguồn + 13 measures + 7 DQ + 5 lineage. DDL chuẩn: `postgres/init/01_init.sql`; không thêm/bớt cột khi sửa mapping.
+- `TripKey = trip_id = MD5(lower(source_file_sha256) || '_' || source_row_number)`. PK duy nhất; UNIQUE `(SourceFileSHA256, SourceRowNumber)`; 11 FK NOT NULL DEFAULT 0.
+- Test `assert_fact_structure` kiểm tra tên/kiểu/nullability của đủ 40 cột, PK, lineage UNIQUE và 11 FK đã validate. `verify_t01.sql` hiển thị kỳ vọng 40.
+- Nghiệm thu chạy trong database `taxi_acceptance_*` riêng. Model `qa.acceptance_fact_input` chỉ bật bằng `integration_acceptance=true`, kiểm thử phép ghép 11 FK và truyền measures/DQ; **không phải model nạp Fact incremental T02**.
+- Thực hiện mock trước, hai tháng 2021-01/2023-02 sau; kiểm tra count, SUM(total_amount), lineage, 11 FK, 18 bộ khóa kỳ vọng, 60 bộ cờ DQ và chính sách RateCode 99. Xem `docs/INTEGRATION_ACCEPTANCE.md` để chạy lại và đọc kết quả.

@@ -8,15 +8,12 @@
     ]
 ) }}
 
-SELECT * FROM (
-    VALUES
-        (0::INT, 0::INT, 'Unknown / Unmapped Rate'::VARCHAR(100), 'OTHER'::VARCHAR(50), 'MISSING'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (1::INT, 1::INT, 'Standard rate'::VARCHAR(100), 'STANDARD'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (2::INT, 2::INT, 'JFK'::VARCHAR(100), 'AIRPORT'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (3::INT, 3::INT, 'Newark'::VARCHAR(100), 'AIRPORT'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (4::INT, 4::INT, 'Nassau or Westchester'::VARCHAR(100), 'OTHER'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (5::INT, 5::INT, 'Negotiated fare'::VARCHAR(100), 'NEGOTIATED'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (6::INT, 6::INT, 'Group ride'::VARCHAR(100), 'OTHER'::VARCHAR(50), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (99::INT, 99::INT, 'Other / Unknown Rate 99'::VARCHAR(100), 'OTHER'::VARCHAR(50), 'UNMAPPED'::VARCHAR(20), 'v1.0'::VARCHAR(32))
-) AS t("RateCodeKey", "RateCodeID", "RateCodeName", "RateGroup", "MappingStatus", "MetadataVersion")
-ORDER BY "RateCodeKey"
+select 0::int as "RateCodeKey", 0::int as "RateCodeID",
+       'Unknown / Unmapped Rate'::varchar(100) as "RateCodeName",
+       'OTHER'::varchar(50) as "RateGroup", 'MISSING'::varchar(20) as "MappingStatus",
+       '{{ var("dq_rule_version") }}'::varchar(32) as "MetadataVersion"
+union all
+select m.rate_code_key::int, m.rate_code_id::int, m.rate_code_name::varchar(100),
+       upper(m.rate_group)::varchar(50), m.mapping_status::varchar(20), m.mapping_version::varchar(32)
+from {{ ref('seed_rate_code_mapping') }} m
+where {{ mapping_is_active('m') }}

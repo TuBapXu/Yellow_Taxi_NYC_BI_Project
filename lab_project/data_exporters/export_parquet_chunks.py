@@ -175,7 +175,6 @@ def export_parquet_batches_to_staging(df_manifest: pd.DataFrame, *args, **kwargs
                             index=False,
                             na_rep='',
                             quoting=csv.QUOTE_NONE,
-                            
                         )
                         buf.seek(0)
 

@@ -1,0 +1,153 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - dbt_staging_and_dims
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: check_or_ingest_zones
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: check_or_ingest_zones
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - export_parquet_chunks
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: scan_parquet_manifest
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: scan_parquet_manifest
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - dbt_staging_and_dims
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: export_parquet_chunks
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - scan_parquet_manifest
+  uuid: export_parquet_chunks
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - dbt_fact_incremental
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: dbt_staging_and_dims
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - check_or_ingest_zones
+  - export_parquet_chunks
+  uuid: dbt_staging_and_dims
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - quality_audit_and_tests
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: dbt_fact_incremental
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - dbt_staging_and_dims
+  uuid: dbt_fact_incremental
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - record_benchmark_metrics
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: quality_audit_and_tests
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - dbt_fact_incremental
+  uuid: quality_audit_and_tests
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: record_benchmark_metrics
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - quality_audit_and_tests
+  uuid: record_benchmark_metrics
+
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-11-17 09:30:00.000000+00:00'
+data_integration: null
+description: 'Task T03 (TTU): Master ETL Pipeline điều phối toàn luồng: Ingestion Parquet (chunk 100k) -> Staging (Views + DQ Flags) -> 8 Dimensions -> Fact Incremental -> Quality Tests & Benchmark'
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: master_etl_pipeline
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags:
+- T03
+- master_dag
+- orchestration
+- dbt
+type: python
+uuid: master_etl_pipeline
+variables_dir: /home/src/mage_data/lab_project
+widgets: []

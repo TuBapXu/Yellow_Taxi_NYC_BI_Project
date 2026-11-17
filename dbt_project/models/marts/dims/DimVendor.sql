@@ -8,10 +8,11 @@
     ]
 ) }}
 
-SELECT * FROM (
-    VALUES
-        (0::INT, 0::INT, 'Unknown / Unmapped Vendor'::VARCHAR(100), 'MISSING'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (1::INT, 1::INT, 'Creative Mobile Technologies, LLC'::VARCHAR(100), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32)),
-        (2::INT, 2::INT, 'VeriFone Inc.'::VARCHAR(100), 'VERIFIED'::VARCHAR(20), 'v1.0'::VARCHAR(32))
-) AS t("VendorKey", "VendorID", "VendorName", "MappingStatus", "MetadataVersion")
-ORDER BY "VendorKey"
+select 0::int as "VendorKey", 0::int as "VendorID",
+       'Unknown / Unmapped Vendor'::varchar(100) as "VendorName",
+       'MISSING'::varchar(20) as "MappingStatus", '{{ var("dq_rule_version") }}'::varchar(32) as "MetadataVersion"
+union all
+select m.vendor_key::int, m.vendor_id::int, m.vendor_name::varchar(100),
+       m.mapping_status::varchar(20), m.mapping_version::varchar(32)
+from {{ ref('seed_vendor_mapping') }} m
+where {{ mapping_is_active('m') }}
