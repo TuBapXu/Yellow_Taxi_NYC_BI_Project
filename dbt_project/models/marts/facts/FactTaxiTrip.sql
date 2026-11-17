@@ -2,16 +2,20 @@
     materialized='incremental',
     alias='FactTaxiTrip',
     quoting={'identifier': true},
-    unique_key='"TripKey"',
-    incremental_strategy='delete+insert'
+    unique_key=None if var('s03_fast_append', false) else '"TripKey"',
+    incremental_strategy='append' if var('s03_fast_append', false) else 'delete+insert',
+    pre_hook=[
+        "SET LOCAL synchronous_commit = off;",
+        "SET LOCAL work_mem = '256MB';"
+    ]
 ) }}
 
 {#
-  TASK T02 (TTU) - MÔ HÌNH FACT TRUNG TÂM dds."FactTaxiTrip" (SINGLE DDS)
+  TASK T02 (TTU) & S03 (STINH) - MÔ HÌNH FACT TRUNG TÂM dds."FactTaxiTrip" (SINGLE DDS)
   - Grain: 1 dòng / 1 giao dịch chuyến xe riêng lẻ kết thúc thành công
   - 11 Role-playing Foreign Keys với quy ước khóa mặc định Key = 0 (Zero Orphaned FKs)
   - 40 Cột chuẩn hóa 100% theo Data Contract v1.2 & DDL PostgreSQL 16
-  - Incremental: delete+insert theo TripKey đảm bảo Idempotent khi rerun batch
+  - Hỗ trợ s03_fast_append=true khi chạy Bulk Load 36 tháng và delete+insert mặc định
 #}
 
 with flagged_trips as (

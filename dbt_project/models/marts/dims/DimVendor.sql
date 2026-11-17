@@ -8,11 +8,25 @@
     ]
 ) }}
 
-select 0::int as "VendorKey", 0::int as "VendorID",
-       'Unknown / Unmapped Vendor'::varchar(100) as "VendorName",
-       'MISSING'::varchar(20) as "MappingStatus", '{{ var("dq_rule_version") }}'::varchar(32) as "MetadataVersion"
-union all
-select m.vendor_key::int, m.vendor_id::int, m.vendor_name::varchar(100),
-       m.mapping_status::varchar(20), m.mapping_version::varchar(32)
-from {{ ref('seed_vendor_mapping') }} m
-where {{ mapping_is_active('m') }}
+WITH unknown_member AS (
+    SELECT
+        0::INT AS "VendorKey",
+        0::INT AS "VendorID",
+        'Unknown / Unmapped Vendor'::VARCHAR(100) AS "VendorName",
+        'MISSING'::VARCHAR(20) AS "MappingStatus",
+        'v1.2'::VARCHAR(32) AS "MetadataVersion"
+),
+seeded_vendors AS (
+    SELECT
+        vendor_key::INT AS "VendorKey",
+        vendor_id::INT AS "VendorID",
+        vendor_name::VARCHAR(100) AS "VendorName",
+        mapping_status::VARCHAR(20) AS "MappingStatus",
+        mapping_version::VARCHAR(32) AS "MetadataVersion"
+    FROM {{ ref('seed_vendor_mapping') }}
+    WHERE mapping_status = 'VERIFIED'
+)
+SELECT * FROM unknown_member
+UNION ALL
+SELECT * FROM seeded_vendors
+ORDER BY "VendorKey"
