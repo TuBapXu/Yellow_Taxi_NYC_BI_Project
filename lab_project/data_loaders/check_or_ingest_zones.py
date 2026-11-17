@@ -3,18 +3,19 @@ import subprocess
 from pathlib import Path
 import psycopg2
 
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 from lab_project.data_loaders.ingest_spatial_zones import load_and_ingest_zones
 
 
-@custom
+@data_loader
 def check_or_ingest_zones(*args, **kwargs):
     """
-    Task T03: Kiểm tra xem DimZone và shapefile đã nạp vào CSDL chưa.
+    Task T03: Data Loader kiểm tra xem DimZone và shapefile đã nạp vào CSDL chưa.
+    Tái sử dụng loader ingest_spatial_zones của STINH (S01).
     Nếu chưa, tự động nạp taxi_zone_lookup.csv + shapefile và build DimZone.
     """
     conn = psycopg2.connect(

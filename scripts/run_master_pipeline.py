@@ -21,13 +21,13 @@ from psycopg2.extras import RealDictCursor
 root_dir = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(root_dir))
 
-from lab_project.custom.check_and_ingest_zones import check_or_ingest_zones
+from lab_project.data_loaders.check_or_ingest_zones import check_or_ingest_zones
 from lab_project.data_loaders.scan_parquet_manifest import scan_and_register_manifest
 from lab_project.data_exporters.export_parquet_chunks import export_parquet_batches_to_staging
-from lab_project.custom.dbt_transform_staging_and_dims import run_dbt_staging_and_dims
-from lab_project.custom.dbt_load_fact_incremental import run_dbt_fact_incremental
-from lab_project.custom.dbt_test_and_audit import run_dbt_test_and_audit
-from lab_project.custom.record_benchmark_metrics import record_benchmark_metrics
+from lab_project.transformers.dbt_staging_and_dims import dbt_staging_and_dims as run_dbt_staging_and_dims
+from lab_project.transformers.dbt_fact_incremental import dbt_fact_incremental as run_dbt_fact_incremental
+from lab_project.transformers.quality_audit_and_tests import quality_audit_and_tests as run_dbt_test_and_audit
+from lab_project.data_exporters.record_benchmark_metrics import record_benchmark_metrics
 
 
 def run_pipeline(target_file="yellow_tripdata_2021-01.parquet", force_reload=False):

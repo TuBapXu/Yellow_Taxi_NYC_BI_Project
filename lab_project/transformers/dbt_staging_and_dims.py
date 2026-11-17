@@ -2,16 +2,16 @@ import time
 import subprocess
 from pathlib import Path
 
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 
-@custom
-def run_dbt_staging_and_dims(*args, **kwargs):
+@transformer
+def dbt_staging_and_dims(*args, **kwargs):
     """
-    Task T03: Thực thi biến đổi dbt cho tầng Staging và 8 Dimension Tables.
+    Task T03: Transformer thực thi biến đổi dbt cho tầng Staging và 8 Dimension Tables.
     - staging.stg_yellow_trips
     - staging.stg_trips_flagged (áp dụng toàn bộ DQ rules B02)
     - dds.DimDate, DimTime, DimZone, DimVendor, DimPaymentType, DimRateCode, DimPassengerGroup, DimDistanceBand

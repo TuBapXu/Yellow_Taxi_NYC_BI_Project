@@ -5,16 +5,16 @@ from pathlib import Path
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 
-@custom
-def run_dbt_test_and_audit(*args, **kwargs):
+@transformer
+def quality_audit_and_tests(*args, **kwargs):
     """
-    Task T03: Kiểm toán chất lượng và thực thi data tests cho Fact.
+    Task T03: Transformer kiểm toán chất lượng và thực thi data tests cho Fact.
     - Chạy dbt test cho FactTaxiTrip và các test kiểm tra toàn vẹn
     - Đối soát trực tiếp số dòng và tổng tiền giữa Staging và Fact
     - Kiểm tra số lượng FK mồ côi (yêu cầu = 0)
@@ -28,7 +28,6 @@ def run_dbt_test_and_audit(*args, **kwargs):
     res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True)
     test_duration = round(time.time() - t0, 2)
 
-    # Truy vấn đối soát CSDL thực tế
     conn = psycopg2.connect(
         host=os.getenv('POSTGRES_HOST', 'postgres'),
         port=int(os.getenv('POSTGRES_PORT', 5432)),

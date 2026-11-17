@@ -2,16 +2,16 @@ import time
 import subprocess
 from pathlib import Path
 
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 
-@custom
-def run_dbt_fact_incremental(*args, **kwargs):
+@transformer
+def dbt_fact_incremental(*args, **kwargs):
     """
-    Task T03: Thực thi nạp dbt Incremental vào bảng dds."FactTaxiTrip".
+    Task T03: Transformer nạp dbt Incremental vào bảng dds."FactTaxiTrip".
     - 11 Role-playing FKs
     - 13 Measures & 7 DQ Flags
     - Chiến lược delete+insert theo TripKey đảm bảo tính Idempotent

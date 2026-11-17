@@ -3,18 +3,18 @@ blocks:
   color: null
   configuration: {}
   downstream_blocks:
-  - scan_parquet_manifest
+  - dbt_staging_and_dims
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: check_and_ingest_zones
+  name: check_or_ingest_zones
   retry_config: null
   status: executed
   timeout: null
-  type: custom
+  type: data_loader
   upstream_blocks: []
-  uuid: check_and_ingest_zones
+  uuid: check_or_ingest_zones
 
 - all_upstream_blocks_executed: true
   color: null
@@ -30,15 +30,14 @@ blocks:
   status: executed
   timeout: null
   type: data_loader
-  upstream_blocks:
-  - check_and_ingest_zones
+  upstream_blocks: []
   uuid: scan_parquet_manifest
 
 - all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
-  - dbt_transform_staging_and_dims
+  - dbt_staging_and_dims
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -56,37 +55,38 @@ blocks:
   color: null
   configuration: {}
   downstream_blocks:
-  - dbt_load_fact_incremental
+  - dbt_fact_incremental
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: dbt_transform_staging_and_dims
+  name: dbt_staging_and_dims
   retry_config: null
   status: executed
   timeout: null
-  type: custom
+  type: transformer
   upstream_blocks:
+  - check_or_ingest_zones
   - export_parquet_chunks
-  uuid: dbt_transform_staging_and_dims
+  uuid: dbt_staging_and_dims
 
 - all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
-  - dbt_test_and_audit
+  - quality_audit_and_tests
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: dbt_load_fact_incremental
+  name: dbt_fact_incremental
   retry_config: null
   status: executed
   timeout: null
-  type: custom
+  type: transformer
   upstream_blocks:
-  - dbt_transform_staging_and_dims
-  uuid: dbt_load_fact_incremental
+  - dbt_staging_and_dims
+  uuid: dbt_fact_incremental
 
 - all_upstream_blocks_executed: true
   color: null
@@ -97,14 +97,14 @@ blocks:
   executor_type: local_python
   has_callback: false
   language: python
-  name: dbt_test_and_audit
+  name: quality_audit_and_tests
   retry_config: null
   status: executed
   timeout: null
-  type: custom
+  type: transformer
   upstream_blocks:
-  - dbt_load_fact_incremental
-  uuid: dbt_test_and_audit
+  - dbt_fact_incremental
+  uuid: quality_audit_and_tests
 
 - all_upstream_blocks_executed: true
   color: null
@@ -118,9 +118,9 @@ blocks:
   retry_config: null
   status: executed
   timeout: null
-  type: custom
+  type: data_exporter
   upstream_blocks:
-  - dbt_test_and_audit
+  - quality_audit_and_tests
   uuid: record_benchmark_metrics
 
 cache_block_output_in_memory: false

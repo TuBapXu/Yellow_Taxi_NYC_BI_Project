@@ -3,27 +3,25 @@ import csv
 from pathlib import Path
 import psutil
 
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 
-@custom
+@data_exporter
 def record_benchmark_metrics(*args, **kwargs):
     """
-    Task T03: Thu thập các chỉ số hiệu năng và lưu trữ ra file benchmark_1m.csv.
+    Task T03: Data Exporter thu thập các chỉ số hiệu năng và lưu trữ ra file benchmark_1m.csv.
     """
     audit_metrics = args[0] if args else {}
 
-    # Đo bộ nhớ RAM hiện tại của container/process
     process = psutil.Process(os.getpid())
     mem_info = process.memory_info()
     ram_mb = round(mem_info.rss / (1024 * 1024), 2)
 
     root = Path(__file__).resolve().parents[2]
     benchmark_csv = root / 'benchmark_1m.csv'
-    benchmark_md = root / 'docs' / 'BENCHMARK_1M.md'
 
     file_name = kwargs.get('file_pattern', 'yellow_tripdata_2021-01.parquet')
 
