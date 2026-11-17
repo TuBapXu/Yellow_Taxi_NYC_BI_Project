@@ -117,3 +117,5 @@ RUN_*.bat
 
 # Bao cao nghiem thu tich hop dung chung
 !docs/INTEGRATION_ACCEPTANCE.md
+!docs/TASK_T02_T03_RUNBOOK.md
+!docs/BENCHMARK_1M.md
