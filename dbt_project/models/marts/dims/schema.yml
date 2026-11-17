@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: DimDate
+    description: "Bảng chiều Ngày (31/12/2020 - 01/01/2024 + Key 0 = 1.098 dòng)"
+    columns:
+      - name: '"DateKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimTime
+    description: "Bảng chiều Thời gian trong ngày (1.440 phút + Key 0 = 1.441 dòng)"
+    columns:
+      - name: '"TimeKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimZone
+    description: "Bảng chiều Khu vực Taxi tích hợp PostGIS MultiPolygon EPSG:4326 (265 mã + Key 0 = 266 dòng)"
+    columns:
+      - name: '"ZoneKey"'
+        tests:
+          - unique
+          - not_null
+      - name: '"LocationID"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimVendor
+    description: "Bảng chiều Nhà cung cấp TPEP"
+    columns:
+      - name: '"VendorKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimPaymentType
+    description: "Bảng chiều Phương thức thanh toán"
+    columns:
+      - name: '"PaymentTypeKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimRateCode
+    description: "Bảng chiều Biểu phí"
+    columns:
+      - name: '"RateCodeKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimPassengerGroup
+    description: "Bảng chiều Nhóm số lượng hành khách"
+    columns:
+      - name: '"PassengerGroupKey"'
+        tests:
+          - unique
+          - not_null
+
+  - name: DimDistanceBand
+    description: "Bảng chiều Dải cự ly chuyến đi"
+    columns:
+      - name: '"DistanceBandKey"'
+        tests:
+          - unique
+          - not_null
