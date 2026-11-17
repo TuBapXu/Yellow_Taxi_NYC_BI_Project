@@ -1,0 +1,15 @@
+metric_name,metric_value,unit,note
+file_name,yellow_tripdata_2021-01.parquet,text,Tệp dữ liệu kiểm thử 1 tháng mẫu
+footer_row_count,1369769,rows,Số dòng khai báo trong footer metadata Parquet
+staged_row_count,1369769,rows,Số dòng nạp thành công vào staging.raw_yellow_trips
+fact_row_count,1369769,rows,Số dòng nạp thành công vào dds.FactTaxiTrip
+distinct_trips,1369769,rows,Số lượng TripKey duy nhất trong Fact
+fact_orphaned_fks,0,rows,Số lượng khóa ngoại mồ côi (yêu cầu = 0)
+has_dq_issue_rows,32136,rows,Số dòng bị gắn cờ dị thường chất lượng (vẫn được giữ lại)
+total_amount_usd,23935896.09,USD,Tổng doanh thu đối soát giữa Staging và Fact
+time_ingestion_seconds,71.24,seconds,Thời gian PyArrow đọc và nạp thô vào Postgres (chunk 100k)
+time_dbt_dims_seconds,24.42,seconds,Thời gian dbt xử lý staging views và 8 dimensions
+time_dbt_fact_seconds,387.77,seconds,Thời gian dbt nạp FactTaxiTrip incremental
+time_dbt_tests_seconds,171.82,seconds,Thời gian chạy toàn bộ data tests
+total_pipeline_duration_seconds,655.25,seconds,Tổng thời gian chạy toàn luồng end-to-end (kèm ingestion)
+peak_memory_mb,75.3,MB,Mức tiêu thụ RAM của tiến trình Mage

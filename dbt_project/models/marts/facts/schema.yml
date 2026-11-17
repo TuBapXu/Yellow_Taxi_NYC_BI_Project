@@ -1,0 +1,154 @@
+version: 2
+
+models:
+  - name: FactTaxiTrip
+    description: "Bảng Sự kiện trung tâm lưu trữ toàn bộ các chuyến taxi vàng NYC (Single DDS) theo kiến trúc Star Schema."
+    columns:
+      - name: '"TripKey"'
+        description: "Khóa chính bất biến sinh từ MD5(lower(SourceFileSHA256) || '_' || SourceRowNumber)."
+        tests:
+          - unique
+          - not_null
+
+      - name: '"PickupDateKey"'
+        description: "Khóa ngoại ngày đón khách trỏ về DimDate.DateKey (YYYYMMDD, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimDate')
+              field: '"DateKey"'
+
+      - name: '"DropoffDateKey"'
+        description: "Khóa ngoại ngày trả khách trỏ về DimDate.DateKey (YYYYMMDD, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimDate')
+              field: '"DateKey"'
+
+      - name: '"PickupTimeKey"'
+        description: "Khóa ngoại giờ đón khách trỏ về DimTime.TimeKey (1-1440 phút, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimTime')
+              field: '"TimeKey"'
+
+      - name: '"DropoffTimeKey"'
+        description: "Khóa ngoại giờ trả khách trỏ về DimTime.TimeKey (1-1440 phút, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimTime')
+              field: '"TimeKey"'
+
+      - name: '"PickupZoneKey"'
+        description: "Khóa ngoại khu vực đón khách trỏ về DimZone.ZoneKey (1-265, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimZone')
+              field: '"ZoneKey"'
+
+      - name: '"DropoffZoneKey"'
+        description: "Khóa ngoại khu vực trả khách trỏ về DimZone.ZoneKey (1-265, mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimZone')
+              field: '"ZoneKey"'
+
+      - name: '"VendorKey"'
+        description: "Khóa ngoại nhà cung cấp TPEP trỏ về DimVendor.VendorKey (mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimVendor')
+              field: '"VendorKey"'
+
+      - name: '"PaymentTypeKey"'
+        description: "Khóa ngoại phương thức thanh toán trỏ về DimPaymentType.PaymentTypeKey (mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimPaymentType')
+              field: '"PaymentTypeKey"'
+
+      - name: '"RateCodeKey"'
+        description: "Khóa ngoại biểu phí trỏ về DimRateCode.RateCodeKey (mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimRateCode')
+              field: '"RateCodeKey"'
+
+      - name: '"PassengerGroupKey"'
+        description: "Khóa ngoại nhóm hành khách trỏ về DimPassengerGroup.PassengerGroupKey (mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimPassengerGroup')
+              field: '"PassengerGroupKey"'
+
+      - name: '"DistanceBandKey"'
+        description: "Khóa ngoại dải cự ly chuyến đi trỏ về DimDistanceBand.DistanceBandKey (mặc định 0)."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('DimDistanceBand')
+              field: '"DistanceBandKey"'
+
+      - name: '"TripCount"'
+        description: "Thước đo định lượng Additive: luôn bằng 1 để đếm sản lượng chuyến."
+        tests:
+          - not_null
+
+      - name: '"IsTimeUsable"'
+        description: "Cờ hợp lệ thời gian chuyến đi (Dropoff > Pickup, duration <= 24h, trong miền ngày)."
+        tests:
+          - not_null
+
+      - name: '"IsDistanceUsable"'
+        description: "Cờ hợp lệ cự ly di chuyển (0 < Distance <= 100 dặm)."
+        tests:
+          - not_null
+
+      - name: '"IsAmountUsable"'
+        description: "Cờ hợp lệ doanh thu tài chính (0 < Total <= 5000$, Fare >= 0, Tip >= 0, cấu thành hợp lệ)."
+        tests:
+          - not_null
+
+      - name: '"HasDQIssue"'
+        description: "Cờ tổng hợp chất lượng: TRUE nếu vi phạm ít nhất 1 trong 3 cờ usable trên."
+        tests:
+          - not_null
+
+      - name: '"QualityRuleVersion"'
+        description: "Phiên bản bộ quy tắc chất lượng dữ liệu áp dụng."
+        tests:
+          - not_null
+
+      - name: '"SourceFileName"'
+        description: "Tên file dữ liệu nguồn Parquet/CSV."
+        tests:
+          - not_null
+
+      - name: '"SourceFileSHA256"'
+        description: "Mã băm SHA-256 nội dung file nguồn."
+        tests:
+          - not_null
+
+      - name: '"SourceRowNumber"'
+        description: "Số thứ tự dòng thực tế trong file nguồn."
+        tests:
+          - not_null
+
+      - name: '"LoadBatchID"'
+        description: "Mã định danh batch điều phối nạp dữ liệu từ Mage."
+        tests:
+          - not_null
+
+      - name: '"LoadedAtUTC"'
+        description: "Thời điểm nạp dữ liệu vào DWH theo giờ chuẩn quốc tế UTC."
+        tests:
+          - not_null

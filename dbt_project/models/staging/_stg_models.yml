@@ -36,3 +36,22 @@ models:
           - not_null
       - name: raw_payload
         data_tests: [not_null]
+
+  - name: stg_trips_flagged
+    description: "B02 - stg_yellow_trips + bộ cờ chất lượng (Data Contract v1.2 mục 2.2). Giữ 100% dòng; đầu vào FactTaxiTrip (T02)."
+    columns:
+      - name: trip_id
+        data_tests: [unique, not_null]
+      - name: is_time_usable
+        data_tests: [not_null]
+      - name: is_distance_usable
+        data_tests: [not_null]
+      - name: is_amount_usable
+        data_tests: [not_null]
+      - name: has_dq_issue
+        data_tests: [not_null]
+      - name: quality_rule_version
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["{{ var('dq_rule_version') }}"]

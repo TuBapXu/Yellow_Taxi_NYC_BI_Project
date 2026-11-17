@@ -114,3 +114,6 @@ Claude outputs/
 
 # File chay nhanh tren may ca nhan - khong dua len Git
 RUN_*.bat
+
+# Bao cao nghiem thu tich hop dung chung
+!docs/INTEGRATION_ACCEPTANCE.md
