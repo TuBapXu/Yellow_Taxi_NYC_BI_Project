@@ -1,5 +1,5 @@
 # ==============================================================================
-# Chay Task B01 (nbinh): dbt staging stg_yellow_trips tren MOCK roi tren du lieu THAT
+# Chay Task B01 + B02 (nbinh): stg_yellow_trips + stg_trips_flagged tren MOCK roi tren du lieu THAT
 # Log ghi vao logs\b01_*.log  -  Chi chay tren may local
 # ==============================================================================
 $ErrorActionPreference = 'Continue'
@@ -25,7 +25,7 @@ if ($LASTEXITCODE -ne 0) { Log "!!! Docker Desktop chua chay. Mo Docker Desktop 
 Step "1. docker compose up -d" { docker compose up -d }
 if ($LASTEXITCODE -ne 0) { Log "!!! docker compose up loi. Dung lai."; Read-Host "Nhan Enter de dong"; exit 1 }
 
-Step "2. dbt seed / run / test (MOCK roi THAT)" { docker compose exec -T mage bash /home/src/scripts/b01_in_container.sh }
+Step "2. dbt seed / run / test B01+B02 (MOCK roi THAT)" { docker compose exec -T mage bash /home/src/scripts/b01_in_container.sh }
 
 Sql "3. Doi soat raw = stg + rejects" "SELECT (SELECT COUNT(*) FROM staging.raw_yellow_trips) AS raw_rows, (SELECT COUNT(*) FROM staging.stg_yellow_trips) AS stg_rows, (SELECT COUNT(*) FROM staging.stg_yellow_trips_rejects) AS reject_rows, (SELECT COUNT(*) FROM staging.quarantine) AS quarantine_table_rows;"
 Sql "4. Theo file nguon" "SELECT source_file_name, COUNT(*) AS stg_rows, COUNT(*) FILTER (WHERE passenger_count IS NULL) AS null_passenger, COUNT(*) FILTER (WHERE trip_duration_seconds <= 0) AS duration_le_0, COUNT(*) FILTER (WHERE trip_duration_seconds > 86400) AS duration_gt_24h, ROUND(AVG(trip_duration_seconds)) AS avg_duration_s, SUM(total_amount) AS sum_total_amount FROM staging.stg_yellow_trips GROUP BY 1 ORDER BY 1;"
@@ -33,6 +33,9 @@ Sql "4b. Khong mat airport_fee giua 2 schema + tien bi lam tron" "SELECT source_
 Sql "5. Ly do quarantine" "SELECT quarantine_reason, COUNT(*) FROM staging.quarantine GROUP BY 1 ORDER BY 2 DESC;"
 Sql "5b. Chi tiet loi theo cot (top 20)" "SELECT e AS loi_cot, COUNT(*) FROM staging.quarantine, jsonb_array_elements_text(raw_payload->'_cast_errors') e GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
 Sql "6. Mau 5 dong stg_yellow_trips" "SELECT trip_id, vendor_id, pickup_datetime, dropoff_datetime, passenger_count, trip_distance, store_and_fwd_flag, payment_type, total_amount, trip_duration_seconds FROM staging.stg_yellow_trips LIMIT 5;"
+
+Sql "7. B02 - Ty le co usable theo file" "SELECT source_file_name, COUNT(*) AS rows, COUNT(*) FILTER (WHERE has_dq_issue) AS dq_issue, ROUND(100.0*COUNT(*) FILTER (WHERE has_dq_issue)/COUNT(*),3) AS pct_issue, COUNT(*) FILTER (WHERE NOT is_time_usable) AS time_bad, COUNT(*) FILTER (WHERE NOT is_distance_usable) AS dist_bad, COUNT(*) FILTER (WHERE NOT is_amount_usable) AS amount_bad, COUNT(*) FILTER (WHERE passenger_count IS NULL) AS missing_passenger, ROUND(100.0*COUNT(*) FILTER (WHERE passenger_count IS NULL)/COUNT(*),3) AS pct_missing_passenger FROM staging.stg_trips_flagged GROUP BY 1 ORDER BY 1;"
+Sql "8. B02 - Tan suat tung ma loi" "SELECT kind, code, COUNT(*) FROM (SELECT 'data' kind, unnest(string_to_array(data_quality_flags, ';')) code FROM staging.stg_trips_flagged UNION ALL SELECT 'attribute', unnest(string_to_array(attribute_quality_flags, ';')) FROM staging.stg_trips_flagged) x GROUP BY 1,2 ORDER BY 1,3 DESC;"
 
 Log ""; Log "B01 xong: $(Get-Date). Log: $log"
 Read-Host "Xong! Nhan Enter de dong cua so"

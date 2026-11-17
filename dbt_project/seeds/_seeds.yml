@@ -1,0 +1,18 @@
+version: 2
+
+seeds:
+  - name: seed_vendor_mapping
+    description: "B02/S02 - mapping VendorID đã xác minh (dùng chung cho stg_trips_flagged và DimVendor). Mã không có ở đây -> UNMAPPED_VENDOR, key 0."
+    columns:
+      - name: vendor_id
+        data_tests: [unique, not_null]
+      - name: vendor_key
+        data_tests: [unique, not_null]
+
+  - name: seed_rate_code_mapping
+    description: "B02/S02 - mapping RateCodeID (dùng chung cho stg_trips_flagged và DimRateCode). 99 là fixture, cần xác minh trước sản xuất."
+    columns:
+      - name: rate_code_id
+        data_tests: [unique, not_null]
+      - name: rate_code_key
+        data_tests: [unique, not_null]

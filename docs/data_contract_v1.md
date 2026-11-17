@@ -1,7 +1,7 @@
-# DATA CONTRACT V1 — GIAO DIỆN TẦNG STAGING (TASK B01)
+# DATA CONTRACT V1 — GIAO DIỆN TẦNG STAGING (TASK B01 + B02)
 
 **Dự án:** Kho dữ liệu & BI NYC Yellow Taxi (2021–2023) — Nhóm 09
-**Task:** B01 — Data Contract & dbt Staging Transformations (nbinh)
+**Task:** B01 — Data Contract & dbt Staging Transformations; B02 — Data Quality Framework (nbinh)
 **Nguồn chuẩn:** `docs/DATA_CONTRACT_AND_MOCK_GUIDE.md` (Data Contract v1.2). Tài liệu này là bản triển khai cho tầng staging; khi hai tài liệu khác nhau, v1.2 được ưu tiên và tài liệu này phải được cập nhật theo.
 **Trạng thái:** Đã cài đặt và kiểm thử (mock + 2 file thật). **Chờ cả ba thành viên (ttu, nbinh, stinh) xác nhận** mapping nguồn, miền ngày, bảng khóa, seed fixture và expected trước khi nghiệm thu (Contract mục 5).
 
@@ -19,7 +19,8 @@ stg_yellow_trips_source   (ephemeral: raw thật, hoặc seed giả lập khi b0
         │
         ▼
 stg_yellow_trips_typed    (view: ép kiểu an toàn + mảng cast_errors theo cột)
-        ├──► stg_yellow_trips          (view: dòng ép kiểu thành công → đầu vào B02 stg_trips_flagged)
+        ├──► stg_yellow_trips          (view: dòng ép kiểu thành công)
+        │       └──► stg_trips_flagged (view B02: + cờ DQ → đầu vào T02 FactTaxiTrip)
         └──► stg_yellow_trips_rejects  (view: dòng lỗi) ──► dbt run-operation load_quarantine ──► staging.quarantine
 ```
 
@@ -136,6 +137,9 @@ Staging **giữ nguyên mã nguồn hoặc NULL**. Việc ánh xạ về key 0 c
 | `mock_cast_edge_cases.csv` | 24 ca biên (xem danh sách ngay dưới bảng) |
 | `mock_expected_stg_yellow_trips.csv` | Kỳ vọng B01 cho từng dòng: vào stg hay quarantine, lý do, passenger, store flag, duration, vendor, rate, distance, `money_rounded_columns` |
 | `mock_expected_flagged.csv` | Kỳ vọng **B02/T02** cho 18 dòng contract: 3 cờ usable, `has_dq_issue`, `data_quality_flags`, `attribute_quality_flags` và đủ 11 khóa Fact |
+| `mock_dq_edge_cases.csv` | 26 ca biên DQ của B02 (xem mục 12.4) |
+| `mock_expected_flagged_edge.csv` | Kỳ vọng cờ B02 cho các dòng ca biên (cast + DQ) đã vào stg |
+| `seed_vendor_mapping.csv`, `seed_rate_code_mapping.csv` | Mapping dùng chung B02 và S02 (mục 12.2) |
 
 24 ca biên trong `mock_cast_edge_cases.csv`:
 - passenger `1.0` / `1.5`; rate `1.0` / `1.5`;
@@ -148,7 +152,7 @@ Staging **giữ nguyên mã nguồn hoặc NULL**. Việc ánh xạ về key 0 c
 
 - Bộ kỳ vọng được tính bằng một script Python viết **độc lập** với SQL, theo đúng rule của contract.
 - `mock_expected_flagged.csv` đã được đối chiếu **khớp 18/18 dòng** với bảng kỳ vọng ở Contract mục 4.
-- Kỳ vọng trên mock: **34 dòng vào `stg_yellow_trips`, 8 dòng vào quarantine.**
+- Kỳ vọng trên mock: **60 dòng vào `stg_yellow_trips` (18 contract + 16 ca biên ép kiểu + 26 ca biên DQ), 8 dòng vào quarantine.**
 - Test `assert_mock_matches_expected` phải trả 0 dòng lệch.
 - Test cảnh báo `warn_trip_distance_precision_over_6` phải bắt **đúng 1** dòng (2.0000001). Trên mock, kết quả WARN=1 là đúng thiết kế.
 
@@ -179,3 +183,71 @@ Trên Windows: bấm đúp `RUN_B01.bat` ở thư mục gốc dự án. Log đư
 - **S01 ghi NULL thành chuỗi `\N`.** Trong `export_parquet_chunks.py`, lệnh `to_csv(na_rep='\\N', escapechar='\\')` escape luôn dấu `\`, nên lệnh `COPY` lưu chuỗi 2 ký tự `\N` thay vì NULL. Điều này trái Contract nguyên tắc 4 (raw phải giữ đúng dữ liệu nguồn).
   - B01 đã tự xử lý bằng cách coi `\N` là NULL.
   - S01 vẫn nên sửa tận gốc rồi nạp lại raw (dùng `force_reload`).
+
+---
+
+## 12. B02 — `staging.stg_trips_flagged` (Data Quality Framework)
+
+**Trạng thái:** Đã cài đặt và kiểm thử (mock + 2 file thật). Chờ cả nhóm review danh mục mã lỗi và seed mapping.
+
+### 12.1. Giao diện
+
+Giữ **100% dòng** của `stg_yellow_trips` (Preserve & Flag), cùng các cột nghiệp vụ, `store_and_fwd_flag_raw`, `money_rounded_columns` và 5 cột lineage, thêm:
+
+| Cột | Kiểu | NULL | Quy tắc |
+|---|---|:-:|---|
+| `is_time_usable` | BOOLEAN | NO | Không có mã lỗi thời gian |
+| `is_distance_usable` | BOOLEAN | NO | Không có mã lỗi cự ly |
+| `is_amount_usable` | BOOLEAN | NO | Không có mã lỗi tiền |
+| `has_dq_issue` | BOOLEAN | NO | `NOT (time AND distance AND amount)` |
+| `data_quality_flags` | TEXT | YES | Mã lỗi usable, không lặp, sắp alphabet, nối `;`; không lỗi thì NULL |
+| `attribute_quality_flags` | TEXT | YES | Cảnh báo thuộc tính, cùng quy cách; **không** ảnh hưởng 3 cờ usable |
+| `quality_rule_version` | VARCHAR(32) | NO | Biến dbt `dq_rule_version` (`v1.2`) |
+
+Macro: `macros/dq_rules.sql` (`dq_time_codes`, `dq_distance_codes`, `dq_amount_codes`, `dq_attribute_codes`, `dq_join_codes`). Mọi rule kiểm **độc lập**, một dòng có thể mang nhiều mã.
+
+### 12.2. Danh mục mã
+
+| Nhóm | Mã | Điều kiện |
+|---|---|---|
+| Thời gian | `MISSING_TIME` | pickup hoặc dropoff NULL |
+| | `DATE_OUT_OF_DOMAIN` | ngày pickup hoặc dropoff ngoài 31/12/2020–01/01/2024 (bao gồm hai biên) |
+| | `TIME_REVERSED` | dropoff ≤ pickup |
+| | `DURATION_OVER_24H` | duration > 86.400 giây |
+| Cự ly | `MISSING_DISTANCE` / `NEGATIVE_DISTANCE` / `ZERO_DISTANCE` / `DISTANCE_OUTLIER` | NULL / < 0 / = 0 / > 100 |
+| Tiền | `MISSING_TOTAL_AMOUNT`, `MISSING_FARE_AMOUNT`, `MISSING_TIP_AMOUNT` | cột tương ứng NULL |
+| | `NEGATIVE_TOTAL_AMOUNT` / `ZERO_TOTAL_AMOUNT` | total < 0 / = 0 |
+| | `NEGATIVE_FARE`, `NEGATIVE_TIP` | fare < 0, tip < 0 |
+| | `AMOUNT_OVER_5000` | total > 5.000 |
+| | `INCONSISTENT_TOTAL` | `total + 0.01 < fare + tip + COALESCE(tolls, 0)` (chỉ kiểm khi total, fare, tip đều có) |
+| Thuộc tính | `MISSING_PASSENGER_COUNT` / `INVALID_PASSENGER_COUNT` | NULL / ≤ 0 hoặc > 9 |
+| | `MISSING_VENDOR` / `UNMAPPED_VENDOR` | NULL / không có trong `seed_vendor_mapping` |
+| | `MISSING_RATE_CODE` / `UNMAPPED_RATE_CODE` | NULL / không có trong `seed_rate_code_mapping` |
+| | `MISSING_STORE_AND_FWD_FLAG` / `INVALID_STORE_AND_FWD_FLAG` | nguồn NULL / có giá trị nhưng khác Y, N |
+| | `MONEY_ROUNDED` | có cột tiền bị làm tròn về cent ở B01 (`money_rounded_columns`) |
+
+**Quyết định của nhóm (12/11/2026):** `MONEY_ROUNDED` nằm ở `attribute_quality_flags`; VendorID 6 (11.492 dòng trong 2023-02) là `UNMAPPED_VENDOR` cho tới khi xác minh.
+
+### 12.3. Seed mapping dùng chung (B02 tạo, S02 dùng lại)
+
+- `seed_vendor_mapping.csv`: VendorID 1 (CMT), 2 (VeriFone) — `VERIFIED`.
+- `seed_rate_code_mapping.csv`: RateCodeID 1–6 (`VERIFIED`) và 99 (`FIXTURE`, cần xác minh trước sản xuất).
+- `stg_trips_flagged` tra mapping bằng `EXISTS` nên không thể nhân dòng; không đọc bảng dimension.
+- **stinh:** DimVendor/DimRateCode phải dựng từ đúng hai seed này để mã `UNMAPPED_*` và FK = 0 nhất quán.
+
+### 12.4. Kiểm thử
+
+| Test | Nội dung |
+|---|---|
+| `assert_flagged_matches_expected` (mock) | 6 cột cờ khớp 100% với `mock_expected_flagged` (18 dòng) và `mock_expected_flagged_edge` (42 dòng) |
+| `assert_flagged_reconciles_with_stg` | Số dòng và tổng `total_amount` của flagged = stg |
+| `assert_flag_codes_known` | Mọi mã thuộc danh mục 12.2; `has_dq_issue` nhất quán với 3 cờ và `data_quality_flags` |
+| Schema tests | `not_null` 4 cờ + `quality_rule_version`, `unique` trip_id, `unique` khóa seed mapping |
+
+26 ca biên DQ (`mock_dq_edge_cases.csv`): total đúng 5.000 / 5.000,01; sai số đúng 0,01 / vượt 0,01; total 0, âm, NULL; fare, tip, tolls NULL; passenger 0 / 9 / 10; cự ly đúng 100, âm, NULL, 0; duration đúng 24h; dropoff = pickup; dropoff NULL; pickup 30/12/2020; ngày 2024-01-02 đảo ngược; vendor NULL / 6; rate 7; store flag rỗng; một dòng nhiều lỗi.
+
+### 12.5. Bàn giao cho T02 (ttu)
+
+- Fact đọc `{{ ref('stg_trips_flagged') }}`; số dòng Fact phải bằng số dòng flagged trên cùng phạm vi.
+- Các cột cờ map sang PascalCase: `IsTimeUsable`, `IsDistanceUsable`, `IsAmountUsable`, `HasDQIssue`, `DataQualityFlags`, `AttributeQualityFlags`, `QualityRuleVersion`.
+- Khóa Fact kỳ vọng cho 18 dòng contract nằm sẵn trong `mock_expected_flagged.csv`.

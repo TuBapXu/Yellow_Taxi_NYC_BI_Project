@@ -1,7 +1,7 @@
 {#
   B01 (nbinh) - Đầu vào của tầng staging.
   - Mặc định: bảng raw thật staging.raw_yellow_trips (S01 nạp).
-  - Chạy với --vars '{b01_use_mock: true}': dùng 2 seed giả lập (18 dòng contract + ca biên ép kiểu),
+  - Chạy với --vars '{b01_use_mock: true}': dùng 3 seed giả lập (18 dòng contract + ca biên ép kiểu + ca biên DQ của B02),
     sinh lineage giống hệt raw để kiểm thử mà không đụng dữ liệu thật.
 #}
 {{ config(materialized='ephemeral') }}
@@ -15,7 +15,7 @@
 
 {% if var('b01_use_mock', false) %}
 
-    {% for seed_name in ['mock_yellow_trips', 'mock_cast_edge_cases'] %}
+    {% for seed_name in ['mock_yellow_trips', 'mock_cast_edge_cases', 'mock_dq_edge_cases'] %}
     select
         '{{ seed_name }}.csv'::varchar(255)                                        as source_file_name,
         encode(sha256(convert_to('{{ seed_name }}.csv', 'UTF8')), 'hex')::char(64) as source_file_sha256,
