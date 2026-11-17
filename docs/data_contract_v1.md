@@ -254,7 +254,6 @@ Macro: `macros/dq_rules.sql` (`dq_time_codes`, `dq_distance_codes`, `dq_amount_c
 - Fact đọc `{{ ref('stg_trips_flagged') }}`; số dòng Fact phải bằng số dòng flagged trên cùng phạm vi.
 - Các cột cờ map sang PascalCase: `IsTimeUsable`, `IsDistanceUsable`, `IsAmountUsable`, `HasDQIssue`, `DataQualityFlags`, `AttributeQualityFlags`, `QualityRuleVersion`.
 - Khóa Fact kỳ vọng cho 18 dòng contract nằm sẵn trong `mock_expected_flagged.csv`.
-
 ### 12.6. Cấu trúc Fact và nghiệm thu tích hợp (17/11/2026)
 
 - `dds."FactTaxiTrip"` giữ **40 cột**: 1 PK + 11 FK + 3 thuộc tính nguồn + 13 measures + 7 DQ + 5 lineage. DDL chuẩn: `postgres/init/01_init.sql`; không thêm/bớt cột khi sửa mapping.
