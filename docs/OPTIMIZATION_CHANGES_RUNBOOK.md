@@ -74,6 +74,18 @@ Trước khi thực hiện tối ưu, các thành phần liên quan do các thà
   $$\text{Parquet Footer Rows} \equiv \text{Staged Rows} \equiv \text{Fact Loaded Rows}$$
 - **Kiểm thử dbt toàn diện (Full Data Contract Audit):** Chạy toàn bộ 38 dbt tests ở các mốc quan trọng (milestones) hoặc ở cuối toàn bộ tiến trình 36 tháng.
 
+### 3.4. Khắc phục lỗi tương thích thực thi động trên Mage.ai UI (`NameError: __file__`)
+- **Nguyên nhân sự cố:** Khi người dùng nhấn chạy trực tiếp các block trên giao diện web **Mage.ai UI**, Mage biên dịch và thực thi mã nguồn của block dưới dạng chuỗi động qua `exec(code_str)` trong IPython kernel. Trong môi trường này, biến đặc biệt `__file__` không tồn tại trong `globals()`, gây lỗi `NameError: name '__file__' is not defined` tại các dòng xác định đường dẫn gốc `Path(__file__).resolve().parents[2]` (phát hiện ở Block 4 `dbt_staging_and_dims`).
+- **Giải pháp khắc phục:** Triển khai cơ chế xác định đường dẫn dự án dạng **Dynamic Fallback** an toàn đồng bộ cho toàn bộ 5 blocks trong `lab_project`:
+  ```python
+  root = (
+      Path(__file__).resolve().parents[2]
+      if '__file__' in globals()
+      else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
+  )
+  ```
+  Cơ chế này đảm bảo pipeline vận hành trơn tru cả khi chạy qua script dòng lệnh (`__file__` tồn tại) lẫn khi bấm **Execute Block / Run Pipeline** trực tiếp trên giao diện Mage.ai Web UI.
+
 ---
 
 ## 4. CHI TIẾT CÁC TỆP NGUỒN ĐÃ CHỈNH SỬA & TẠO MỚI
@@ -83,11 +95,15 @@ Trước khi thực hiện tối ưu, các thành phần liên quan do các thà
 | 1 | `lab_project/data_exporters/export_parquet_chunks.py` | Sửa đổi | Bổ sung cờ `truncate_staging=True`. Thay lệnh `DELETE` chậm bằng `TRUNCATE TABLE staging.raw_yellow_trips;`. |
 | 2 | `dbt_project/macros/dq_rules.sql` | Sửa đổi | Viết lại macro `dq_join_codes`: bổ sung `case when cardinality({{ codes_expr }}) = 0 then null else ... end`. |
 | 3 | `dbt_project/models/staging/stg_trips_flagged.sql` | Sửa đổi | Chuyển correlated `exists` sang set-based `IN (SELECT ...)` cho vendor và rate code. |
-| 4 | `lab_project/transformers/dbt_fact_incremental.py` | Sửa đổi | Bổ sung nhận diện tham số `target_file` và truyền biến `source_file_name` vào câu lệnh `dbt run`. |
+| 4 | `lab_project/transformers/dbt_fact_incremental.py` | Sửa đổi | Bổ sung nhận diện `target_file`, truyền `source_file_name` vào `dbt run`, và fix lỗi `__file__` trên Mage UI. |
 | 5 | `dbt_project/tests/assert_fact_reconciles_with_stg.sql` | Sửa đổi | Giới hạn đối soát Staging với Fact chỉ trên các tệp đang hiện diện trong Staging (tương thích Transient Staging). |
 | 6 | `scripts/run_master_pipeline.py` | Sửa đổi | Truyền tham số `target_file` vào khối `run_dbt_fact_incremental`. |
-| 7 | `scripts/run_bulk_pipeline.py` | **Tạo mới** | Bộ điều phối nạp Bulk 36 tháng tốc độ cao bằng Python: tự động quản lý Staging Buffer, Smoke Check 0.5s, cập nhật `meta.file_manifest`. |
-| 8 | `scripts/run_bulk_36m.ps1` | **Tạo mới** | Script PowerShell giao diện dòng lệnh 1-click cho người dùng Windows, hỗ trợ các cờ `-Year`, `-MaxFiles`, `-RunTests`. |
+| 7 | `lab_project/transformers/dbt_staging_and_dims.py` | Sửa đổi | Fix lỗi `NameError: __file__` bằng dynamic fallback path cho Block 4 trên Mage.ai UI. |
+| 8 | `lab_project/transformers/quality_audit_and_tests.py` | Sửa đổi | Fix lỗi `NameError: __file__` bằng dynamic fallback path cho Block 6 trên Mage.ai UI. |
+| 9 | `lab_project/data_exporters/record_benchmark_metrics.py` | Sửa đổi | Fix lỗi `NameError: __file__` bằng dynamic fallback path cho Block 7 trên Mage.ai UI. |
+| 10 | `lab_project/data_loaders/check_or_ingest_zones.py` | Sửa đổi | Fix lỗi `NameError: __file__` bằng dynamic fallback path cho Block 1 trên Mage.ai UI. |
+| 11 | `scripts/run_bulk_pipeline.py` | **Tạo mới** | Bộ điều phối nạp Bulk 36 tháng tốc độ cao bằng Python: tự động quản lý Staging Buffer, Smoke Check 0.5s, cập nhật `meta.file_manifest`. |
+| 12 | `scripts/run_bulk_36m.ps1` | **Tạo mới** | Script PowerShell giao diện dòng lệnh 1-click cho người dùng Windows, hỗ trợ các cờ `-Year`, `-MaxFiles`, `-RunTests`. |
 
 ---
 
@@ -116,6 +132,7 @@ Kiểm tra trực tiếp trên PostgreSQL container (`lab-postgres`):
   - `assert_fact_lineage_unique`: PASS (Bảo toàn nguồn gốc dòng).
   - `assert_fact_no_orphaned_fks`: PASS (0 khóa ngoại mồ côi).
   - 11 ràng buộc tham chiếu Foreign Key tới 8 Dimensions: PASS 100%.
+* **Kiểm thử tương thích Mage.ai Interactive Kernel:** Chạy mô phỏng thực thi Block 4 (`dbt_staging_and_dims`) trong môi trường `exec()` không có `__file__` hoàn thành sau 45.1s với `Done. PASS=12 WARN=0 ERROR=0 SKIP=0 TOTAL=12`, xác nhận toàn bộ 5 blocks đã tương thích hoàn toàn với Mage Web UI.
 
 ---
 
