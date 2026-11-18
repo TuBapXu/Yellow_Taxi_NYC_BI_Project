@@ -88,6 +88,18 @@ def prepare_ultra_fast_bulk_mode(conn):
 
     -- 5. Tạo 1 index siêu nhẹ trên SourceFileName để đối soát tức thì từng tháng
     CREATE INDEX IF NOT EXISTS idx_fact_temp_source_file ON dds."FactTaxiTrip" ("SourceFileName");
+
+    -- 6. Gỡ MỌI FK còn lại trên Fact bất kể tên. Macro restore_fact_fk (post_hook của 8 Dims) tạo FK tên
+    --    chữ thường (facttaxitrip_*_fkey) nên các lệnh DROP tên có ngoặc kép ở bước 1 không khớp -> FK vẫn còn.
+    DO $$
+    DECLARE r record;
+    BEGIN
+        FOR r IN SELECT conname FROM pg_constraint
+                 WHERE conrelid = 'dds."FactTaxiTrip"'::regclass AND contype = 'f'
+        LOOP
+            EXECUTE format('ALTER TABLE dds."FactTaxiTrip" DROP CONSTRAINT %I', r.conname);
+        END LOOP;
+    END $$;
     """
     with conn.cursor() as cur:
         cur.execute(sql)
@@ -353,6 +365,13 @@ def main():
                 single_df = pd.DataFrame([row])
                 single_df['action_status'] = 'PENDING'
                 export_parquet_batches_to_staging(single_df, batch_size=100000, force_reload=True)
+
+                # 2b. Cập nhật thống kê staging NGAY sau khi nạp. Nếu không, dbt lên kế hoạch với thống kê của
+                #     file trước (autoanalyze chạy trễ ~30s) -> ước lượng ~0 dòng cho source_file_name mới
+                #     -> chọn kế hoạch kém: ~840s/file thay vì ~45s/file (đo thực tế 18/11).
+                with conn.cursor() as cur:
+                    cur.execute("ANALYZE staging.raw_yellow_trips;")
+                conn.commit()
 
                 # 3. Chạy dbt FactTaxiTrip ở chế độ s03_fast_append (không tạo bảng tạm, INSERT trực tiếp vào bảng UNLOGGED)
                 dbt_vars = f'{{"source_file_name": "{fname}", "s03_fast_append": true}}'
