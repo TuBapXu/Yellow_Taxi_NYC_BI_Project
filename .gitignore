@@ -117,5 +117,7 @@ RUN_*.bat
 
 # Bao cao nghiem thu tich hop dung chung
 !docs/INTEGRATION_ACCEPTANCE.md
+# B04 (nbinh): ban thao bao cao phan Staging & DQ + doi soat tai chinh (san pham ban giao theo Ke hoach GD2)
+!docs/B04_BAO_CAO_STAGING_DQ.md
 !docs/TASK_T02_T03_RUNBOOK.md
 !docs/BENCHMARK_1M.md
