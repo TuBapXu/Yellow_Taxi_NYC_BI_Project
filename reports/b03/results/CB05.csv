@@ -1,0 +1,127 @@
+﻿nhom_khach,bieu_phi,dai_cu_ly,so_chuyen,so_khach,doanh_thu_thuan,doanh_thu_tb_chuyen,cu_ly_tb_dam
+1 khách,Unknown / Unmapped Rate,0 miles,47792,47792,2054434.67,43.33,
+1 khách,Unknown / Unmapped Rate,(0-2] miles,57693,57693,1198908.6,20.82,1.148
+1 khách,Unknown / Unmapped Rate,(2-5] miles,76054,76054,1863136.57,24.52,3.418
+1 khách,Unknown / Unmapped Rate,(5-100] miles,174714,174714,7867030.01,45.05,11.527
+1 khách,Unknown / Unmapped Rate,>100 miles,57,57,1729.81,30.35,
+1 khách,Standard rate,0 miles,688633,688633,10211321.46,16.39,
+1 khách,Standard rate,(0-2] miles,42347874,42347874,592639856.78,14.1,1.168
+1 khách,Standard rate,(2-5] miles,21878638,21878638,487368268.91,22.38,3.018
+1 khách,Standard rate,(5-100] miles,9361823,9361823,432925854.42,46.56,9.251
+1 khách,Standard rate,>100 miles,1207,1207,88113.08,73.98,
+1 khách,JFK,0 miles,67419,67419,3990367.75,69.41,
+1 khách,JFK,(0-2] miles,65065,65065,3597796.6,68.09,0.29
+1 khách,JFK,(2-5] miles,15440,15440,1130069.21,75.72,3.377
+1 khách,JFK,(5-100] miles,2084231,2084231,166305715.07,80.13,18.455
+1 khách,JFK,>100 miles,45,45,3206.53,71.26,
+1 khách,Newark,0 miles,9717,9717,220764.09,26.5,
+1 khách,Newark,(0-2] miles,7634,7634,159752.79,26.0,0.384
+1 khách,Newark,(2-5] miles,2226,2226,100404.47,47.36,3.581
+1 khách,Newark,(5-100] miles,152733,152733,17057873.93,112.4,18.373
+1 khách,Newark,>100 miles,13,13,2671.93,205.53,
+1 khách,Nassau or Westchester,0 miles,739,739,13702.64,19.8,
+1 khách,Nassau or Westchester,(0-2] miles,1035,1035,16004.4,16.38,0.953
+1 khách,Nassau or Westchester,(2-5] miles,1462,1462,64055.64,44.86,3.688
+1 khách,Nassau or Westchester,(5-100] miles,114797,114797,12617240.57,111.78,21.55
+1 khách,Nassau or Westchester,>100 miles,172,172,92490.52,592.89,
+1 khách,Negotiated fare,0 miles,223026,223026,13469971.33,62.73,
+1 khách,Negotiated fare,(0-2] miles,72951,72951,4264359.31,60.65,0.375
+1 khách,Negotiated fare,(2-5] miles,23837,23837,1259084.15,53.5,3.541
+1 khách,Negotiated fare,(5-100] miles,106528,106528,11988135.99,113.8,18.694
+1 khách,Negotiated fare,>100 miles,375,375,131326.77,368.9,
+1 khách,Group ride,0 miles,263,263,10839.06,44.79,
+1 khách,Group ride,(0-2] miles,97,97,586.53,6.67,0.602
+1 khách,Group ride,(2-5] miles,16,16,118.97,7.44,3.021
+1 khách,Group ride,(5-100] miles,20,20,414.69,21.83,14.277
+1 khách,Group ride,>100 miles,1,1,12.42,12.42,
+2-4 khách,Unknown / Unmapped Rate,0 miles,547,1202,17641.29,33.54,
+2-4 khách,Unknown / Unmapped Rate,(0-2] miles,52,120,925.1,18.14,0.879
+2-4 khách,Unknown / Unmapped Rate,(2-5] miles,19,39,309.4,16.28,2.814
+2-4 khách,Unknown / Unmapped Rate,(5-100] miles,18,39,837.2,46.51,11.699
+2-4 khách,Standard rate,0 miles,91391,217825,1050965.28,12.95,
+2-4 khách,Standard rate,(0-2] miles,11239502,26532820,158801449.05,14.24,1.184
+2-4 khách,Standard rate,(2-5] miles,6221824,14733897,139561508.64,22.53,3.041
+2-4 khách,Standard rate,(5-100] miles,2749945,6521766,127860651.27,46.79,9.292
+2-4 khách,Standard rate,>100 miles,336,812,21941.91,66.09,
+2-4 khách,JFK,0 miles,39620,89745,2259306.03,70.39,
+2-4 khách,JFK,(0-2] miles,30809,69035,1684372.68,69.11,0.298
+2-4 khách,JFK,(2-5] miles,8544,20000,627237.38,76.91,3.345
+2-4 khách,JFK,(5-100] miles,1214169,2823748,96677258.85,80.25,18.383
+2-4 khách,JFK,>100 miles,37,84,2613.61,70.64,
+2-4 khách,Newark,0 miles,7531,20836,150180.02,25.99,
+2-4 khách,Newark,(0-2] miles,5446,14485,107196.44,25.84,0.282
+2-4 khách,Newark,(2-5] miles,1169,3028,52193.87,48.69,3.592
+2-4 khách,Newark,(5-100] miles,89548,224306,10001180.3,113.1,18.525
+2-4 khách,Newark,>100 miles,9,22,2105.15,233.91,
+2-4 khách,Nassau or Westchester,0 miles,137,339,4045.65,30.65,
+2-4 khách,Nassau or Westchester,(0-2] miles,290,680,5390.58,19.12,1.045
+2-4 khách,Nassau or Westchester,(2-5] miles,470,1133,22057.76,47.54,3.708
+2-4 khách,Nassau or Westchester,(5-100] miles,37479,91620,3925108.12,106.48,20.531
+2-4 khách,Nassau or Westchester,>100 miles,49,132,27477.99,597.35,
+2-4 khách,Negotiated fare,0 miles,103940,280009,7667037.82,75.83,
+2-4 khách,Negotiated fare,(0-2] miles,37581,95654,2622110.21,72.07,0.373
+2-4 khách,Negotiated fare,(2-5] miles,11391,29332,732800.15,65.59,3.556
+2-4 khách,Negotiated fare,(5-100] miles,70731,185118,7773821.2,111.62,17.731
+2-4 khách,Negotiated fare,>100 miles,190,513,74218.78,416.96,
+2-4 khách,Group ride,0 miles,100,323,748.49,8.32,
+2-4 khách,Group ride,(0-2] miles,53,165,328.51,6.99,0.517
+2-4 khách,Group ride,(2-5] miles,4,12,15.9,5.3,2.538
+2-4 khách,Group ride,(5-100] miles,15,42,103.76,6.92,20.775
+5+ khách,Unknown / Unmapped Rate,0 miles,3,18,71.7,35.85,
+5+ khách,Standard rate,0 miles,10981,58844,102100.9,10.34,
+5+ khách,Standard rate,(0-2] miles,1679864,9063733,22704521.67,13.57,1.182
+5+ khách,Standard rate,(2-5] miles,932937,5029894,20082265.4,21.53,3.015
+5+ khách,Standard rate,(5-100] miles,376850,2032854,16620588.72,44.11,9.056
+5+ khách,Standard rate,>100 miles,13,68,1491.21,114.71,
+5+ khách,JFK,0 miles,1240,6574,74654.0,67.38,
+5+ khách,JFK,(0-2] miles,1395,7501,75736.33,64.84,0.337
+5+ khách,JFK,(2-5] miles,450,2457,32434.58,72.08,3.447
+5+ khách,JFK,(5-100] miles,94559,511277,7355880.56,77.8,18.632
+5+ khách,Newark,0 miles,410,2125,7892.0,24.13,
+5+ khách,Newark,(0-2] miles,310,1640,6209.38,25.14,0.27
+5+ khách,Newark,(2-5] miles,115,609,5134.17,44.64,3.501
+5+ khách,Newark,(5-100] miles,7099,38337,769726.07,108.44,18.319
+5+ khách,Newark,>100 miles,2,10,999.52,499.76,
+5+ khách,Nassau or Westchester,0 miles,10,55,98.9,9.89,
+5+ khách,Nassau or Westchester,(0-2] miles,11,61,132.09,12.01,0.726
+5+ khách,Nassau or Westchester,(2-5] miles,37,202,1573.62,43.71,3.968
+5+ khách,Nassau or Westchester,(5-100] miles,4279,23182,448654.35,104.9,19.993
+5+ khách,Nassau or Westchester,>100 miles,4,22,2917.75,729.44,
+5+ khách,Negotiated fare,0 miles,2967,17409,214803.23,73.41,
+5+ khách,Negotiated fare,(0-2] miles,1736,9476,127546.65,74.24,0.306
+5+ khách,Negotiated fare,(2-5] miles,213,1175,13019.94,61.13,3.619
+5+ khách,Negotiated fare,(5-100] miles,1213,7046,111274.87,91.74,15.415
+5+ khách,Negotiated fare,>100 miles,1,6,0.3,0.3,
+Bất thường / Khuyết,Unknown / Unmapped Rate,0 miles,388662,0,10092705.82,25.99,
+Bất thường / Khuyết,Unknown / Unmapped Rate,(0-2] miles,1055722,0,18123699.59,17.24,1.273
+Bất thường / Khuyết,Unknown / Unmapped Rate,(2-5] miles,1405750,,34197844.22,24.38,3.269
+Bất thường / Khuyết,Unknown / Unmapped Rate,(5-100] miles,1305044,0,62703088.59,48.09,10.441
+Bất thường / Khuyết,Unknown / Unmapped Rate,>100 miles,3039,,108035.47,35.7,
+Bất thường / Khuyết,Standard rate,0 miles,55595,0,668039.23,12.11,
+Bất thường / Khuyết,Standard rate,(0-2] miles,1175358,208,16116550.45,13.71,1.157
+Bất thường / Khuyết,Standard rate,(2-5] miles,541426,0,11873075.74,21.93,3.041
+Bất thường / Khuyết,Standard rate,(5-100] miles,203722,0,8908597.09,43.73,9.058
+Bất thường / Khuyết,Standard rate,>100 miles,30,0,4326.97,144.23,
+Bất thường / Khuyết,JFK,0 miles,3352,0,229314.59,69.07,
+Bất thường / Khuyết,JFK,(0-2] miles,1029,0,71530.15,70.47,0.58
+Bất thường / Khuyết,JFK,(2-5] miles,354,0,24704.36,70.38,3.378
+Bất thường / Khuyết,JFK,(5-100] miles,43477,0,3353217.85,77.14,18.323
+Bất thường / Khuyết,JFK,>100 miles,3,0,207.2,69.07,
+Bất thường / Khuyết,Newark,0 miles,903,0,25148.82,28.23,
+Bất thường / Khuyết,Newark,(0-2] miles,326,0,8026.95,24.85,0.749
+Bất thường / Khuyết,Newark,(2-5] miles,115,0,4091.82,35.89,3.321
+Bất thường / Khuyết,Newark,(5-100] miles,3581,0,384766.27,107.48,18.386
+Bất thường / Khuyết,Newark,>100 miles,1,0,1327.52,1327.52,
+Bất thường / Khuyết,Nassau or Westchester,0 miles,181,0,3593.04,20.53,
+Bất thường / Khuyết,Nassau or Westchester,(0-2] miles,93,0,992.01,10.78,0.946
+Bất thường / Khuyết,Nassau or Westchester,(2-5] miles,48,0,1033.51,22.47,3.396
+Bất thường / Khuyết,Nassau or Westchester,(5-100] miles,1951,0,180206.47,92.37,18.3
+Bất thường / Khuyết,Negotiated fare,0 miles,10137,0,461608.14,46.58,
+Bất thường / Khuyết,Negotiated fare,(0-2] miles,2852,0,105816.92,37.79,0.588
+Bất thường / Khuyết,Negotiated fare,(2-5] miles,888,0,39992.2,45.14,3.274
+Bất thường / Khuyết,Negotiated fare,(5-100] miles,2966,0,288022.85,97.14,18.312
+Bất thường / Khuyết,Negotiated fare,>100 miles,5,0,1547.85,309.57,
+Bất thường / Khuyết,Group ride,0 miles,32,0,3306.68,106.67,
+Bất thường / Khuyết,Group ride,(0-2] miles,11,0,62.7,5.7,0.755
+Bất thường / Khuyết,Group ride,(2-5] miles,2,0,57.4,28.7,2.7
+Bất thường / Khuyết,Group ride,(5-100] miles,5,0,22.7,4.54,18.28

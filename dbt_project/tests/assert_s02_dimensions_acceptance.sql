@@ -1,7 +1,9 @@
 -- Kiểm tra toàn bộ tiêu chí nghiệm thu của Task S02 (Trả về 0 dòng = PASS 100%)
 WITH checks AS (
-    -- 1. DimDate phải có đúng 1.098 dòng (1.097 ngày + Key 0)
-    SELECT 'DimDate_row_count' AS check_name, COUNT(*) AS actual_val, 1098 AS expected_val
+    -- 1. DimDate phải có đủ mọi ngày trong [dim_date_start, dim_date_end] + Key 0
+    --    (2020-12-31 → 2030-12-31 = 3.653 ngày + Key 0 = 3.654 dòng)
+    SELECT 'DimDate_row_count' AS check_name, COUNT(*) AS actual_val,
+           (date '{{ var("dim_date_end") }}' - date '{{ var("dim_date_start") }}' + 2)::bigint AS expected_val
     FROM {{ ref('DimDate') }}
     UNION ALL
     -- 2. DimTime phải có đúng 1.441 dòng (1.440 phút + Key 0)

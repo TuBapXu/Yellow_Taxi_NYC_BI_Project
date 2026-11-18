@@ -85,5 +85,9 @@
 
 {# --- Gộp mã: không lặp, sắp alphabet, nối ';'; không có mã -> NULL ------------------------ #}
 {% macro dq_join_codes(codes_expr) -%}
-    (select string_agg(distinct c, ';' order by c) from unnest({{ codes_expr }}) as c)
+    {#- RFC-002 v2, điều kiện 4: mảng rỗng (đa số dòng sạch) trả NULL ngay, bỏ qua subquery unnest/string_agg.
+        Kết quả không đổi vì string_agg trên tập rỗng vốn đã trả NULL. -#}
+    case when cardinality({{ codes_expr }}) = 0 then null
+         else (select string_agg(distinct c, ';' order by c) from unnest({{ codes_expr }}) as c)
+    end
 {%- endmacro %}

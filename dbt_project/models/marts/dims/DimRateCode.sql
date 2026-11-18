@@ -8,12 +8,28 @@
     ]
 ) }}
 
-select 0::int as "RateCodeKey", 0::int as "RateCodeID",
-       'Unknown / Unmapped Rate'::varchar(100) as "RateCodeName",
-       'OTHER'::varchar(50) as "RateGroup", 'MISSING'::varchar(20) as "MappingStatus",
-       '{{ var("dq_rule_version") }}'::varchar(32) as "MetadataVersion"
-union all
-select m.rate_code_key::int, m.rate_code_id::int, m.rate_code_name::varchar(100),
-       upper(m.rate_group)::varchar(50), m.mapping_status::varchar(20), m.mapping_version::varchar(32)
-from {{ ref('seed_rate_code_mapping') }} m
-where {{ mapping_is_active('m') }}
+WITH unknown_member AS (
+    SELECT
+        0::INT AS "RateCodeKey",
+        0::INT AS "RateCodeID",
+        'Unknown / Unmapped Rate'::VARCHAR(100) AS "RateCodeName",
+        'OTHER'::VARCHAR(50) AS "RateGroup",
+        'MISSING'::VARCHAR(20) AS "MappingStatus",
+        'v1.2'::VARCHAR(32) AS "MetadataVersion"
+),
+seeded_rates AS (
+    SELECT
+        rate_code_key::INT AS "RateCodeKey",
+        rate_code_id::INT AS "RateCodeID",
+        rate_code_name::VARCHAR(100) AS "RateCodeName",
+        UPPER(rate_group)::VARCHAR(50) AS "RateGroup",
+        mapping_status::VARCHAR(20) AS "MappingStatus",
+        mapping_version::VARCHAR(32) AS "MetadataVersion"
+    FROM {{ ref('seed_rate_code_mapping') }}
+    WHERE mapping_status = 'VERIFIED'
+       OR ({{ var('b01_use_mock', false) }} = TRUE AND mapping_status = 'FIXTURE')
+)
+SELECT * FROM unknown_member
+UNION ALL
+SELECT * FROM seeded_rates
+ORDER BY "RateCodeKey"

@@ -11,8 +11,8 @@
 
 WITH date_spine AS (
     SELECT generate_series(
-        '{{ var("dq_date_domain_start", "2020-12-31") }}'::date,
-        '{{ var("dq_date_domain_end", "2024-01-01") }}'::date,
+        '{{ var("dim_date_start", "2020-12-31") }}'::date,
+        '{{ var("dim_date_end", "2030-12-31") }}'::date,
         '1 day'::interval
     )::date AS full_date
 ),
