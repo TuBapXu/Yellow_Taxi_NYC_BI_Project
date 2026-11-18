@@ -144,8 +144,13 @@ seeds:
 vars:
   # true: staging đọc từ seed giả lập thay vì staging.raw_yellow_trips (dbt ... --vars '{b01_use_mock: true}')
   b01_use_mock: false
-  # Miền ngày hợp lệ (Data Contract v1.2 mục 2.2 / 3.1) - bao gồm hai biên; dùng chung cho B02 và DimDate (S02)
+  # Miền ngày hợp lệ cho luật DQ DATE_OUT_OF_DOMAIN (Data Contract v1.2 mục 2.2 / 3.1) - bao gồm hai biên.
+  # CHỈ dùng cho B02 (dq_time_codes). File 2024+ chạy bằng PA3: Worker W3 truyền --vars cửa sổ động
+  # [đầu tháng của file - 1 ngày, cuối tháng của file + 1 ngày] (RFC-002 v2, điều kiện 2).
   dq_date_domain_start: '2020-12-31'
   dq_date_domain_end: '2024-01-01'
+  # Phạm vi lịch của DimDate (S02) - tách khỏi miền DQ để mở rộng lịch không làm đổi luật DQ (RFC-002 v2, điều kiện 1)
+  dim_date_start: '2020-12-31'
+  dim_date_end: '2030-12-31'
   # Phiên bản rule DQ áp dụng đồng nhất ở stg_trips_flagged và Fact (B02)
   dq_rule_version: 'v1.2'
