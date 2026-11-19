@@ -1,0 +1,117 @@
+blocks:
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - backfill_scan_plan
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: backfill_prepare
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: backfill_prepare
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - backfill_execute_bulk
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: backfill_scan_plan
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - backfill_prepare
+  uuid: backfill_scan_plan
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - backfill_handover_gate
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: backfill_execute_bulk
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - backfill_scan_plan
+  uuid: backfill_execute_bulk
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks:
+  - backfill_publish_summary
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: backfill_handover_gate
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - backfill_execute_bulk
+  uuid: backfill_handover_gate
+
+- all_upstream_blocks_executed: true
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: backfill_publish_summary
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - backfill_handover_gate
+  uuid: backfill_publish_summary
+
+cache_block_output_in_memory: false
+callbacks: []
+concurrency_config: {}
+conditionals: []
+created_at: '2026-11-19 02:00:00.000000+00:00'
+data_integration: null
+description: 'Pipeline 1: Initial Historical Backfill (Nạp lớn 36 tháng 2021-2023 - 108.87M dòng)'
+executor_config: {}
+executor_count: 1
+executor_type: null
+extensions: {}
+name: initial_backfill_pipeline
+notification_config: {}
+remote_variables_dir: null
+retry_config: {}
+run_pipeline_in_one_process: false
+settings:
+  triggers: null
+spark_config: {}
+tags:
+- S03
+- backfill
+- turbo_bulk
+- handover_gate
+type: python
+uuid: initial_backfill_pipeline
+variables_dir: /home/src/mage_data/lab_project
+widgets: []

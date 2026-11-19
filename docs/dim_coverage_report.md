@@ -3,7 +3,7 @@
 **Dự án:** Hệ thống BI Phân tích lộ trình NYC Yellow Taxi (2021 – 2023) — Nhóm 09  
 **Task:** S03 — Nạp mở rộng 36 Tháng & Đối soát Dimension  
 **Người phụ trách:** `stinh` (Kiều Đỗ Song Tinh - 23120373)  
-**Thời điểm xuất báo cáo:** 2026-11-17 20:36:17 UTC
+**Thời điểm xuất báo cáo:** 2026-11-18 17:52:43 UTC
 
 ---
 

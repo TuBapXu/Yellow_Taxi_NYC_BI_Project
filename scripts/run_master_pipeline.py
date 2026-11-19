@@ -104,7 +104,7 @@ def run_pipeline(target_file="yellow_tripdata_2021-01.parquet", force_reload=Fal
     # --------------------------------------------------------------------------
     print("\n--- [CHẶNG 4] DBT FACT INCREMENTAL LOAD (dds.FactTaxiTrip) ---")
     t0 = time.time()
-    fact_res = run_dbt_fact_incremental()
+    fact_res = run_dbt_fact_incremental(target_file=target_file)
     timings['time_dbt_fact_seconds'] = round(time.time() - t0, 2)
     print(f"-> Hoàn tất nạp FactTaxiTrip trong {timings['time_dbt_fact_seconds']}s.")
 

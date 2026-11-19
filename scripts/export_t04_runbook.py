@@ -1,0 +1,465 @@
+#!/usr/bin/env python3
+"""
+Chuyen doi docs/TASK_T04_RUNBOOK.md sang TASK_T04_RUNBOOK.html va TASK_T04_RUNBOOK.pdf
+su dung Microsoft Edge headless.
+"""
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parents[1]
+MD_FILE = ROOT / 'docs' / 'TASK_T04_RUNBOOK.md'
+HTML_FILE = ROOT / 'docs' / 'TASK_T04_RUNBOOK.html'
+PDF_FILE = ROOT / 'docs' / 'TASK_T04_RUNBOOK.pdf'
+EDGE_PATH = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+
+html_template = """<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Báo Cáo Kỹ Thuật & Hướng Dẫn Vận Hành Task T04 (Runbook)</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm 8mm 10mm;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #0f172a;
+    line-height: 1.35;
+    font-size: 8.5pt;
+    margin: 0;
+    padding: 0;
+  }
+  .page {
+    width: 100%;
+    page-break-after: always;
+  }
+  .page:last-child {
+    page-break-after: avoid;
+  }
+  .header {
+    border-bottom: 2px solid #0284c7;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header-title {
+    font-size: 12pt;
+    font-weight: 800;
+    color: #0369a1;
+  }
+  .header-subtitle {
+    font-size: 7.5pt;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 7pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .badge-pass { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; }
+  .meta-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    font-size: 7.8pt;
+  }
+  .meta-item { display: flex; flex-direction: column; }
+  .meta-label { color: #64748b; font-size: 6.8pt; text-transform: uppercase; font-weight: 600; }
+  .meta-val { color: #0f172a; font-weight: 600; }
+  
+  h2 {
+    font-size: 9.8pt;
+    font-weight: 700;
+    color: #0f172a;
+    border-left: 3px solid #0284c7;
+    padding-left: 6px;
+    margin: 8px 0 5px 0;
+  }
+  h3 {
+    font-size: 8.8pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 6px 0 3px 0;
+  }
+  p, ul {
+    margin: 0 0 5px 0;
+  }
+  ul { padding-left: 16px; }
+  li { margin-bottom: 2px; }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7.8pt;
+    margin-bottom: 8px;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 6px;
+    text-align: left;
+  }
+  th {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #334155;
+  }
+  tr:nth-child(even) td {
+    background: #f8fafc;
+  }
+  code {
+    background: #f1f5f9;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-family: Consolas, monospace;
+    font-size: 7.5pt;
+    color: #0369a1;
+  }
+  pre {
+    background: #0f172a;
+    color: #f8fafc;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 7.2pt;
+    overflow-x: auto;
+    margin: 4px 0 8px 0;
+  }
+  .footer {
+    border-top: 1px solid #cbd5e1;
+    padding-top: 4px;
+    margin-top: 10px;
+    font-size: 6.8pt;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .card {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 6px 8px;
+    background: #ffffff;
+  }
+  .card-title {
+    font-weight: 700;
+    color: #0369a1;
+    font-size: 8.2pt;
+    margin-bottom: 3px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<!-- TRANG 1 -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="header-title">BÁO CÁO KỸ THUẬT & HƯỚNG DẪN VẬN HÀNH TASK T04</div>
+      <div class="header-subtitle">Diễn tập Bất biến, Phục hồi Sự cố & Đóng gói Vận hành 1-Click (108.87M Dòng)</div>
+    </div>
+    <div>
+      <span class="badge badge-pass">100% Hoàn Thành</span>
+    </div>
+  </div>
+
+  <div class="meta-box">
+    <div class="meta-item"><span class="meta-label">Đề tài</span><span class="meta-val">NYC Yellow Taxi Data Warehouse (2021–2023)</span></div>
+    <div class="meta-item"><span class="meta-label">Môn học</span><span class="meta-val">Hệ thống thông tin PV Trí tuệ KD (CSC12107)</span></div>
+    <div class="meta-item"><span class="meta-label">Người thực hiện</span><span class="meta-val">Phạm Lê Thanh Tú (MSSV: 23120388 - TTU)</span></div>
+    <div class="meta-item"><span class="meta-label">Dung lượng kho</span><span class="meta-val">63 GB (Bảng: 38 GB, Indexes: 25 GB)</span></div>
+    <div class="meta-item"><span class="meta-label">Số dòng Fact chính</span><span class="meta-val">108,870,632 dòng (LOGGED bền vững)</span></div>
+    <div class="meta-item"><span class="meta-label">Khóa ngoại mồ côi</span><span class="meta-val">0 Orphaned FKs (11/11 FK Validated)</span></div>
+  </div>
+
+  <h2>1. TỔNG QUAN & TIÊU CHUẨN NGHIỆM THU ENTERPRISE (TASK T04)</h2>
+  <p>Kho dữ liệu <code>DW_DB</code> hiện đã nạp hoàn chỉnh 100% dữ liệu 36 tháng (108,870,632 dòng). Task T04 đưa hệ thống vào các tình huống vận hành và phục hồi sự cố thực tế khắt khe nhằm chứng minh tính ổn định cấp doanh nghiệp:</p>
+  
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Tiêu chuẩn Nghiệm thu</th>
+        <th style="width: 45%;">Chỉ số Đo lường & Cơ chế Kiểm tra</th>
+        <th style="width: 15%; text-align: center;">Kết quả Thực tế</th>
+        <th style="width: 15%; text-align: center;">Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>AC1: Tính Bất biến (Idempotency)</b></td>
+        <td>Rerun lại file đã nạp (2021-01) &rarr; kiểm tra sai lệch số dòng và doanh thu</td>
+        <td style="text-align: center;"><b>&Delta; = 0 dòng, &Delta; = $0.00</b></td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><b>AC2: Giao dịch Nguyên tử (Atomic)</b></td>
+        <td>Kiểm tra MVCC READ COMMITTED, Rollback hoàn hảo, Zero-Downtime Power BI</td>
+        <td style="text-align: center;"><b>Rollback 100%, 0.08s</b></td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><b>AC3: Phục hồi Sự cố (Crash Recovery)</b></td>
+        <td>Giả lập sập nguồn/ngắt tiến trình giữa chừng &rarr; Fact Zero-Taint, Staging Auto-Cleaned</td>
+        <td style="text-align: center;"><b>0 dòng rác Fact, Sạch 100%</b></td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><b>AC4: Cổng Kiểm toán (Hard Gate)</b></td>
+        <td>Phát hiện sai lệch số dòng Candidate &rarr; Dừng khẩn cấp, từ chối nạp Fact</td>
+        <td style="text-align: center;"><b>Chặn đứng, 0 dòng lọt</b></td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><b>AC5: Nghiệm thu Toàn vẹn (Full Warehouse)</b></td>
+        <td>108,870,632 dòng, 14 Indexes, 11 FKs vật lý (0 orphan), 0 quarantine rows</td>
+        <td style="text-align: center;"><b>100% Khớp, 36/36 files</b></td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. BẰNG CHỨNG 5 KỊCH BẢN DIỄN TẬP VẬN HÀNH (SCRIPTS/TEST_T04_DRILLS.PY)</h2>
+  
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-title"><span>Kịch bản 1: Idempotency Drill</span><span class="badge badge-pass">PASS (23.8s)</span></div>
+      <ul>
+        <li><b>Tệp kiểm tra:</b> <code>yellow_tripdata_2021-01.parquet</code></li>
+        <li><b>Số dòng Fact trước:</b> 1,369,769 | <b>Sau:</b> 1,369,769 (&Delta; = 0)</li>
+        <li><b>Doanh thu trước:</b> $23,935,896.09 | <b>Sau:</b> $23,935,896.09 (&Delta; = $0.00)</li>
+        <li><b>Trạng thái nhận diện:</b> <code>SKIP_ALREADY_LOADED</code> &rarr; Bỏ qua an toàn.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>Kịch bản 2: Atomic Isolation Drill</span><span class="badge badge-pass">PASS (0.08s)</span></div>
+      <ul>
+        <li><b>Mức cô lập:</b> PostgreSQL <code>READ COMMITTED + MVCC</code>.</li>
+        <li><b>Thử nghiệm Rollback:</b> 100% bảng đệm bị hủy bỏ ngay khi rollback.</li>
+        <li><b>Zero-Downtime:</b> Báo cáo Power BI / B03 đọc liên tục 24/7, không bao giờ thấy dữ liệu uncommitted dở dang.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>Kịch bản 3: Crash Recovery & Auto-Resume</span><span class="badge badge-pass">PASS (106.5s)</span></div>
+      <ul>
+        <li><b>Giả lập:</b> Bơm 500 dòng dở dang vào Staging, trạng thái PROCESSING.</li>
+        <li><b>Fact Zero-Taint:</b> Số dòng rác lọt vào <code>FactTaxiTrip</code> = <b>0 dòng</b>.</li>
+        <li><b>Auto-Resume:</b> Hệ thống tự quét, thu hồi và dọn sạch 500 dòng rác khỏi Staging; sẵn sàng chạy lại 100%.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>Kịch bản 4: Audit Hard-Gate Fail-Safe</span><span class="badge badge-pass">PASS (101.6s)</span></div>
+      <ul>
+        <li><b>Giả lập sai lệch:</b> Footer khai báo 1,000 dòng, thực tế chỉ có 990 dòng.</li>
+        <li><b>Phản ứng Hard Gate:</b> Bắt lỗi <code>CANDIDATE_COUNT_MISMATCH</code>, ném ngoại lệ dừng khẩn cấp trước khi commit.</li>
+        <li><b>Bảo vệ Fact:</b> 0 dòng bất hợp lệ lọt vào kho dữ liệu chính.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 6px;">
+    <div class="card-title"><span>Kịch bản 5: Full Warehouse Verification Gate (Nghiệm thu Toàn diện)</span><span class="badge badge-pass">PASS (0.26s)</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 7.5pt;">
+      <div>&bull; <b>Lưu trữ:</b> Fact 38 GB + Indexes 25 GB = <b>63 GB</b> (<code>LOGGED</code>)</div>
+      <div>&bull; <b>Ràng buộc:</b> 1 PK + 1 Unique + 11 FKs (Validated = True)</div>
+      <div>&bull; <b>Chỉ mục:</b> Đầy đủ <b>14 Indexes</b> B-Tree</div>
+      <div>&bull; <b>Manifest:</b> <b>36 / 36 files</b> SUCCESS (108,870,632 dòng)</div>
+      <div>&bull; <b>Quarantine:</b> <b>0 dòng</b> (Zero Rejects)</div>
+      <div>&bull; <b>Khóa ngoại mồ côi:</b> <b>0 Orphaned FKs</b></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Dự án BI NYC Yellow Taxi — Nhóm 09 (FIT HCMUS)</span>
+    <span>Trang 1 / 2 — Task T04 Runbook</span>
+  </div>
+</div>
+
+<!-- TRANG 2 -->
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="header-title">HƯỚNG DẪN VẬN HÀNH 1-CLICK & KẾT QUẢ KIỂM THỬ DBT</div>
+      <div class="header-subtitle">Đóng gói Vận hành & Nghiệm thu Chất lượng Kho Dữ liệu (Task T04)</div>
+    </div>
+    <div>
+      <span class="badge badge-info">Phạm Lê Thanh Tú (TTU)</span>
+    </div>
+  </div>
+
+  <h2>3. KẾT QUẢ THỰC THI BỘ SUITE TEST DBT TRÊN FACTTAXITRIP (38/38 PASS)</h2>
+  <p>Toàn bộ 38 bài kiểm thử chất lượng dữ liệu dbt đã được chạy trực tiếp trên kho <b>108,870,632 dòng</b>:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 35%;">Tên Bài Kiểm thử dbt</th>
+        <th style="width: 20%;">Đối tượng Kiểm tra</th>
+        <th style="width: 30%;">Quy tắc Ràng buộc</th>
+        <th style="width: 15%; text-align: center;">Kết quả</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>unique_FactTaxiTrip__TripKey_</code></td>
+        <td>FactTaxiTrip (PK)</td>
+        <td>Khóa chính không trùng lặp (108.87M keys)</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><code>assert_fact_lineage_unique</code></td>
+        <td>Data Lineage</td>
+        <td>Duy nhất trên (SourceFileSHA256, SourceRowNumber)</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><code>assert_fact_no_orphaned_fks</code></td>
+        <td>11 Foreign Keys</td>
+        <td>0 Khóa ngoại mồ côi trên toàn bộ 8 bảng chiều</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td><code>relationships_FactTaxiTrip_* (11 tests)</code></td>
+        <td>DimDate, DimTime, DimZone, Vendor...</td>
+        <td>Tham chiếu toàn vẹn đến các bảng chiều vật lý</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS (11/11)</span></td>
+      </tr>
+      <tr>
+        <td><code>not_null_FactTaxiTrip_* (22 tests)</code></td>
+        <td>Measures & DQ Flags</td>
+        <td>Không cho phép giá trị NULL trên các thước đo chuẩn</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS (22/22)</span></td>
+      </tr>
+      <tr>
+        <td><code>assert_fact_reconciles_with_stg</code></td>
+        <td>Staging vs Fact</td>
+        <td>Đối soát 100% số dòng và tổng tiền giữa Staging và Fact</td>
+        <td style="text-align: center;"><span class="badge badge-pass">PASS</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>4. HƯỚNG DẪN THỰC THI 1-CLICK (RUNBOOK THAO TÁC)</h2>
+  
+  <h3>Cách 1: Thực thi 1-Click qua PowerShell (Khuyến nghị cho chấm bài)</h3>
+  <p>Mở PowerShell tại thư mục gốc của dự án và chạy duy nhất lệnh sau:</p>
+  <pre>.\scripts\run_t04_drills.ps1</pre>
+  <ul>
+    <li><b>Cơ chế:</b> Script tự kiểm tra Docker, kết nối container <code>lab-mage</code> và <code>lab-postgres</code>, tự động chạy toàn bộ 5 kịch bản diễn tập và in kết quả trực quan ra màn hình.</li>
+    <li><b>Thời gian chạy:</b> <b>~3.9 phút</b> (toàn bộ 5 kịch bản diễn tập hoàn tất).</li>
+    <li><b>Tập tin nhật ký (Log):</b> Tự động lưu tại <code>logs/t04_drills_&lt;timestamp&gt;.log</code> làm bằng chứng nghiệm thu.</li>
+  </ul>
+
+  <h3>Cách 2: Vận hành trên Giao diện Web Mage.ai UI (Orchestration)</h3>
+  <ol>
+    <li>Mở trình duyệt truy cập: <code>http://localhost:6789</code> (Giao diện quản trị Mage.ai).</li>
+    <li>Chọn pipeline: <b><code>master_etl_pipeline</code></b>.</li>
+    <li>Chuyển sang tab <b>Triggers</b>:
+      <ul>
+        <li><b><code>manual_verification_run</code> (Trigger <code>@once</code>):</b> Bấm nút <b>"Run @once"</b> để chạy diễn tập kiểm tra toàn bộ DAG. Toàn bộ 12 block sẽ tự động nhận diện dữ liệu đã nạp đầy đủ và trả về log trạng thái xanh 100%.</li>
+        <li><b><code>monthly_incremental_sync</code> (Trigger <code>@monthly</code>):</b> Trigger tự động kích hoạt vào ngày 5 hàng tháng để quét nạp các file tháng mới (2024-01+) bằng cơ chế <code>delete+insert</code> lũy tiến.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h2>5. PHÂN BỔ DỮ LIỆU 3 NĂM & ĐỐI SOÁT TRUY VẤN NGHIỆP VỤ B03</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Năm Dữ liệu</th>
+        <th>Số lượng Tệp Parquet</th>
+        <th>Số Chuyến Taxi Thực tế</th>
+        <th>Tổng Doanh thu (TotalAmount)</th>
+        <th>Tỷ lệ Toàn vẹn</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Năm 2021</b></td>
+        <td>12 tệp (01/2021 &rarr; 12/2021)</td>
+        <td>30,904,308 chuyến</td>
+        <td>$572,834,167.31 USD</td>
+        <td>100% Khớp Footer</td>
+      </tr>
+      <tr>
+        <td><b>Năm 2022</b></td>
+        <td>12 tệp (01/2022 &rarr; 12/2022)</td>
+        <td>39,656,098 chuyến</td>
+        <td>$867,419,254.40 USD</td>
+        <td>100% Khớp Footer</td>
+      </tr>
+      <tr>
+        <td><b>Năm 2023</b></td>
+        <td>12 tệp (01/2023 &rarr; 12/2023)</td>
+        <td>38,310,226 chuyến</td>
+        <td>$995,379,152.88 USD</td>
+        <td>100% Khớp Footer</td>
+      </tr>
+      <tr style="background: #e0f2fe; font-weight: 700;">
+        <td><b>TỔNG CỘNG 3 NĂM</b></td>
+        <td><b>36 tệp Parquet</b></td>
+        <td><b>108,870,632 chuyến</b></td>
+        <td><b>$2,435,632,574.59 USD</b></td>
+        <td><b>Khớp tuyệt đối 100%</b></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>6. TỔNG KẾT & BÀN GIAO TASK T04</h2>
+  <p>Task <b>T04 (TTU)</b> đã hoàn thành 100% mục tiêu, bàn giao trọn vẹn kho dữ liệu <b>108.87M dòng bền vững</b>, vượt qua toàn diện 5 kịch bản diễn tập và 38/38 dbt tests, sẵn sàng để nhóm 09 bước vào khâu tổng hợp Báo cáo Tổng thể Giai đoạn 2.</p>
+
+  <div class="footer">
+    <span>Dự án BI NYC Yellow Taxi — Nhóm 09 (FIT HCMUS)</span>
+    <span>Trang 2 / 2 — Task T04 Runbook</span>
+  </div>
+</div>
+
+</body>
+</html>
+"""
+
+def main():
+    HTML_FILE.write_text(html_template, encoding='utf-8')
+    print(f"[OK] Da xuat HTML tai: {HTML_FILE}")
+
+    cmd = [
+        EDGE_PATH,
+        '--headless',
+        '--disable-gpu',
+        '--run-all-compositor-stages-before-draw',
+        f'--print-to-pdf={PDF_FILE}',
+        '--no-pdf-header-footer',
+        str(HTML_FILE)
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"[OK] Da bien dich PDF thanh cong: {PDF_FILE}")
+    else:
+        print(f"[WARN] Khong the bien dich PDF bang Edge: {res.stderr}")
+
+if __name__ == '__main__':
+    main()

@@ -19,7 +19,7 @@ def quality_audit_and_tests(*args, **kwargs):
     - Đối soát trực tiếp số dòng và tổng tiền giữa Staging và Fact
     - Kiểm tra số lượng FK mồ côi (yêu cầu = 0)
     """
-    root = Path(__file__).resolve().parents[2]
+    root = Path(__file__).resolve().parents[2] if '__file__' in globals() else (Path('/home/src') if Path('/home/src/lab_project').exists() else Path.cwd())
     dbt_dir = root / 'dbt_project'
 
     t0 = time.time()

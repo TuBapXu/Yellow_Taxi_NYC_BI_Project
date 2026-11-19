@@ -80,6 +80,7 @@ def export_parquet_batches_to_staging(df_manifest: pd.DataFrame, *args, **kwargs
     """
     batch_size = int(kwargs.get('batch_size', 100000))
     force_reload = bool(kwargs.get('force_reload', False))
+    truncate_staging = bool(kwargs.get('truncate_staging', True))
     pipeline_batch_id = str(uuid.uuid4())
     started_ts = datetime.now(timezone.utc)
 
@@ -125,10 +126,13 @@ def export_parquet_batches_to_staging(df_manifest: pd.DataFrame, *args, **kwargs
                     WHERE file_name = %s
                 """, (pipeline_batch_id, file_name))
 
-                cur.execute("""
-                    DELETE FROM staging.raw_yellow_trips
-                    WHERE source_file_name = %s OR source_file_sha256 = %s
-                """, (file_name, file_sha256))
+                if truncate_staging:
+                    cur.execute("TRUNCATE TABLE staging.raw_yellow_trips;")
+                else:
+                    cur.execute("""
+                        DELETE FROM staging.raw_yellow_trips
+                        WHERE source_file_name = %s OR source_file_sha256 = %s
+                    """, (file_name, file_sha256))
             conn.commit()
 
             pf = pq.ParquetFile(file_path)

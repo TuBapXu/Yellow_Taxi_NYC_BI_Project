@@ -1,0 +1,23 @@
+triggers:
+- description: Trigger nap thu nghiem 1 file thang 01/2024 (yellow_tripdata_2024-01.parquet)
+  envs: []
+  last_enabled_at: 2026-11-19 03:29:09.268205+00:00
+  name: run_2024_01_incremental
+  pipeline_uuid: master_etl_pipeline
+  schedule_interval: '@once'
+  schedule_type: time
+  settings: {}
+  sla: null
+  start_time: '2026-11-19 03:22:07'
+  status: active
+  token: null
+  variables:
+    file_pattern: yellow_tripdata_2024-01.parquet
+- description: Trigger tu dong quet va nap thang moi vao ngay 5 hang thang
+  name: monthly_incremental_sync
+  pipeline_uuid: master_etl_pipeline
+  schedule_interval: '@monthly'
+  schedule_type: time
+  start_time: '2026-11-19 03:22:07'
+  status: active
+  variables: {}

@@ -1,0 +1,11 @@
+{
+  "pipeline": "initial_backfill_pipeline",
+  "status": "COMPLETED_VERIFIED",
+  "total_months": 36,
+  "total_rows": 108870632,
+  "table_mode": "p",
+  "total_indexes": 14,
+  "orphaned_fks": 0,
+  "quarantine_rows": 0,
+  "timestamp": "2026-11-19 03:06:01 UTC"
+}
