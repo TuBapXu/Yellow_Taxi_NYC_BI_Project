@@ -1,0 +1,8 @@
+﻿rate_code_key,bieu_phi,nhom_bieu_phi,so_chuyen,so_chuyen_tinh_tip,ty_le_tip_pct,so_chuyen_tinh_van_toc,van_toc_mph,van_toc_avg_don_gian_khong_dung
+0,Unknown / Unmapped Rate,OTHER,4515166,357135,0.01,4021163,13.95,43.17
+1,Standard rate,STANDARD,99557949,78330279,23.84,98704626,10.59,12.66
+2,JFK,AIRPORT,3671238,2848939,20.57,3559255,21.26,37.87
+3,Newark,AIRPORT,288888,209459,19.97,270277,23.92,47.4
+4,Nassau or Westchester,OTHER,163244,108996,15.44,161938,29.3,40.02
+5,Negotiated fare,NEGOTIATED,673528,556499,14.41,332241,22.81,107.19
+6,Group ride,OTHER,619,77,255.69,223,42.68,827.53
