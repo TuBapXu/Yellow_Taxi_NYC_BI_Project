@@ -1,0 +1,9 @@
+triggers:
+  - name: run_full_36m_backfill
+    pipeline_uuid: initial_backfill_pipeline
+    schedule_interval: '@once'
+    schedule_type: time
+    status: inactive
+    start_time: '2026-11-19 00:00:00'
+    variables: {}
+    description: "Trigger nap khoi tao toan bo 36 thang lich su (2021-01 -> 2023-12)"
