@@ -25,7 +25,7 @@ def quality_audit_and_tests(*args, **kwargs):
     t0 = time.time()
     print("[START] Đang chạy dbt test cho Fact và Data Tests toàn vẹn...")
     cmd = ['dbt', 'test', '--select', 'FactTaxiTrip', 'test_type:singular']
-    res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True)
+    res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True, close_fds=True)
     test_duration = round(time.time() - t0, 2)
 
     conn = psycopg2.connect(

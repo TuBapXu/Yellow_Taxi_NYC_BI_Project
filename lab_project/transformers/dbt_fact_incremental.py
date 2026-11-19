@@ -22,7 +22,7 @@ def dbt_fact_incremental(*args, **kwargs):
     t0 = time.time()
     print("[START] Đang chạy dbt run --select FactTaxiTrip...")
     cmd = ['dbt', 'run', '--select', 'FactTaxiTrip']
-    res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True)
+    res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True, close_fds=True)
     duration = round(time.time() - t0, 2)
 
     if res.returncode != 0:
