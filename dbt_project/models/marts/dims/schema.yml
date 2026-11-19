@@ -2,69 +2,256 @@ version: 2
 
 models:
   - name: DimDate
-    description: "Bảng chiều Ngày (31/12/2020 - 01/01/2024 + Key 0 = 1.098 dòng)"
+    description: "Bảng chiều Ngày (31/12/2020 - 01/01/2024 + Key 0 = 1.098 dòng) chuẩn hóa theo chuẩn Kimball."
     columns:
       - name: '"DateKey"'
+        description: "Khóa chính chiều Ngày định dạng số nguyên YYYYMMDD (ví dụ: 20210101). Khóa 0 dành cho giá trị rác/không xác định."
         tests:
           - unique
+          - not_null
+      - name: '"FullDate"'
+        description: "Giá trị ngày dương lịch đầy đủ kiểu Date."
+        tests:
+          - not_null
+      - name: '"YearNumber"'
+        description: "Năm dương lịch bốn chữ số (2020 - 2024)."
+        tests:
+          - not_null
+      - name: '"YearMonth"'
+        description: "Chuỗi biểu diễn năm và tháng định dạng YYYY-MM phục vụ drill-down thời gian."
+        tests:
+          - not_null
+      - name: '"MonthNumber"'
+        description: "Thứ tự tháng trong năm (từ 1 đến 12)."
+        tests:
+          - not_null
+      - name: '"MonthName"'
+        description: "Tên tiếng Anh của tháng (January, February,...)."
+        tests:
+          - not_null
+      - name: '"DayOfWeek"'
+        description: "Số thứ tự ngày trong tuần theo chuẩn ISO 8601 (1 = Thứ Hai đến 7 = Chủ Nhật)."
+        tests:
+          - not_null
+      - name: '"DayName"'
+        description: "Tên ngày trong tuần (Monday, Tuesday,...)."
+        tests:
+          - not_null
+      - name: '"IsWeekend"'
+        description: "Cờ boolean xác định ngày cuối tuần (TRUE nếu là Thứ Bảy hoặc Chủ Nhật, ngược lại FALSE)."
+        tests:
           - not_null
 
   - name: DimTime
-    description: "Bảng chiều Thời gian trong ngày (1.440 phút + Key 0 = 1.441 dòng)"
+    description: "Bảng chiều Thời gian trong ngày theo từng phút (1.440 phút + Key 0 = 1.441 dòng)."
     columns:
       - name: '"TimeKey"'
+        description: "Khóa chính chiều Thời gian đại diện cho phút trong ngày (1 - 1.440). Khóa 0 đại diện cho Unknown Time."
         tests:
           - unique
           - not_null
+      - name: '"TimeLabel"'
+        description: "Nhãn thời gian hiển thị định dạng chuỗi 24 giờ HH:MM (00:00 - 23:59)."
+        tests:
+          - not_null
+      - name: '"HourNumber"'
+        description: "Số giờ trong ngày theo định dạng 24 giờ (0 - 23)."
+        tests:
+          - not_null
+      - name: '"TimeBand"'
+        description: "Phân dải khung giờ hoạt động (Early Morning, Morning Rush, Midday, Evening Rush, Night)."
+        tests:
+          - not_null
 
   - name: DimZone
-    description: "Bảng chiều Khu vực Taxi tích hợp PostGIS MultiPolygon EPSG:4326 (265 mã + Key 0 = 266 dòng)"
+    description: "Bảng chiều Phân vùng Taxi NYC tích hợp dữ liệu không gian PostGIS MultiPolygon EPSG:4326 (265 khu vực + Key 0 = 266 dòng)."
     columns:
       - name: '"ZoneKey"'
+        description: "Khóa chính định danh phân vùng địa lý Taxi (1 - 265, khóa 0 cho Unknown Zone)."
         tests:
           - unique
           - not_null
       - name: '"LocationID"'
+        description: "Mã định danh khu vực nguyên bản từ NYC TLC Taxi Zone Map."
         tests:
           - unique
+          - not_null
+      - name: '"ZoneName"'
+        description: "Tên địa danh cụ thể của khu vực taxi (ví dụ: JFK Airport, Upper East Side South, Times Square)."
+        tests:
+          - not_null
+      - name: '"BoroughName"'
+        description: "Tên quận/hạt trực thuộc thành phố New York (Manhattan, Brooklyn, Queens, Bronx, Staten Island, EWR)."
+        tests:
+          - not_null
+      - name: '"ServiceZone"'
+        description: "Khu vực dịch vụ theo quy chế vận tải TLC (Yellow Zone, Boro Zone, Airports, EWR)."
+        tests:
+          - not_null
+      - name: '"ZoneGeometry"'
+        description: "Đối tượng hình học đa giác không gian MultiPolygon tọa độ EPSG:4326 (WGS84) nạp từ Shapefile TLC."
+      - name: '"HasGeometry"'
+        description: "Cờ boolean xác thực vùng có dữ liệu hình học không gian hợp lệ từ Shapefile hay không."
+        tests:
+          - not_null
+      - name: '"MappingStatus"'
+        description: "Trạng thái kiểm chứng đối soát ánh xạ ('VERIFIED' hoặc 'MISSING')."
+        tests:
+          - not_null
+      - name: '"MetadataVersion"'
+        description: "Phiên bản cấu trúc metadata không gian áp dụng."
+        tests:
           - not_null
 
   - name: DimVendor
-    description: "Bảng chiều Nhà cung cấp TPEP"
+    description: "Bảng chiều Nhà cung cấp thiết bị và công nghệ đo cước TPEP taxi."
     columns:
       - name: '"VendorKey"'
+        description: "Khóa chính nhà cung cấp (1 = Creative Mobile Technologies, 2 = VeriFone Inc, 0 = Unknown)."
         tests:
           - unique
+          - not_null
+      - name: '"VendorID"'
+        description: "Mã định danh nhà cung cấp nguyên bản trong dữ liệu nguồn TLC."
+        tests:
+          - not_null
+      - name: '"VendorName"'
+        description: "Tên doanh nghiệp công nghệ đo cước taxi."
+        tests:
+          - not_null
+      - name: '"MappingStatus"'
+        description: "Trạng thái đối soát mã nhà cung cấp ('VERIFIED' hoặc 'UNKNOWN')."
+        tests:
+          - not_null
+      - name: '"MetadataVersion"'
+        description: "Phiên bản ánh xạ danh mục nhà cung cấp."
+        tests:
           - not_null
 
   - name: DimPaymentType
-    description: "Bảng chiều Phương thức thanh toán"
+    description: "Bảng chiều Phương thức thanh toán cước chuyến đi taxi."
     columns:
       - name: '"PaymentTypeKey"'
+        description: "Khóa chính phương thức thanh toán (1-6, khóa 0 = Unknown)."
         tests:
           - unique
+          - not_null
+      - name: '"PaymentTypeCode"'
+        description: "Mã loại thanh toán gốc từ TLC (1 = Credit card, 2 = Cash, 3 = No charge, 4 = Dispute, 5 = Unknown, 6 = Voided trip)."
+        tests:
+          - not_null
+      - name: '"PaymentTypeName"'
+        description: "Tên phương thức thanh toán chuẩn hóa hiển thị trên báo cáo."
+        tests:
+          - not_null
+      - name: '"IsElectronicTipObservable"'
+        description: "Cờ boolean xác định khoản tiền boa (tip) có được ghi nhận tự động qua cổng điện tử hay không (TRUE đối với thẻ, FALSE đối với tiền mặt)."
+        tests:
+          - not_null
+      - name: '"MappingStatus"'
+        description: "Trạng thái chuẩn hóa dữ liệu thanh toán."
+        tests:
+          - not_null
+      - name: '"MetadataVersion"'
+        description: "Phiên bản danh mục quy tắc thanh toán."
+        tests:
           - not_null
 
   - name: DimRateCode
-    description: "Bảng chiều Biểu phí"
+    description: "Bảng chiều Biểu phí cước di chuyển taxi theo quy định của TLC."
     columns:
       - name: '"RateCodeKey"'
+        description: "Khóa chính biểu phí cước (1-6, khóa 0 = Unknown)."
         tests:
           - unique
+          - not_null
+      - name: '"RateCodeID"'
+        description: "Mã biểu phí gốc (1 = Standard rate, 2 = JFK, 3 = Newark, 4 = Nassau/Westchester, 5 = Negotiated fare, 6 = Group ride)."
+        tests:
+          - not_null
+      - name: '"RateCodeName"'
+        description: "Tên mô tả chi tiết của biểu phí cước chuyến đi."
+        tests:
+          - not_null
+      - name: '"RateGroup"'
+        description: "Nhóm phân loại biểu phí (Standard, Airport, Out of Town, Negotiated, Other)."
+        tests:
+          - not_null
+      - name: '"MappingStatus"'
+        description: "Trạng thái chuẩn hóa biểu phí."
+        tests:
+          - not_null
+      - name: '"MetadataVersion"'
+        description: "Phiên bản danh mục biểu phí TLC."
+        tests:
           - not_null
 
   - name: DimPassengerGroup
-    description: "Bảng chiều Nhóm số lượng hành khách"
+    description: "Bảng chiều Phân nhóm số lượng hành khách đi xe phục vụ phân tích hành vi người dùng."
     columns:
       - name: '"PassengerGroupKey"'
+        description: "Khóa chính phân nhóm hành khách (1-4, khóa 0 = Unknown)."
         tests:
           - unique
           - not_null
+      - name: '"PassengerGroupCode"'
+        description: "Mã phân loại nhóm hành khách (P0_UNKNOWN, P1_SOLO, P2_SMALL_GROUP, P3_LARGE_GROUP)."
+        tests:
+          - not_null
+      - name: '"PassengerGroupName"'
+        description: "Tên hiển thị nhóm hành khách (Solo Passenger 1 khách, Small Group 2-4 khách, Large Group 5+ khách)."
+        tests:
+          - not_null
+      - name: '"MinPassengerCount"'
+        description: "Số lượng hành khách tối thiểu của nhóm."
+        tests:
+          - not_null
+      - name: '"MaxPassengerCount"'
+        description: "Số lượng hành khách tối đa của nhóm."
+        tests:
+          - not_null
+      - name: '"SortOrder"'
+        description: "Thứ tự sắp xếp hiển thị thứ bậc trên báo cáo BI."
+        tests:
+          - not_null
+      - name: '"RuleVersion"'
+        description: "Phiên bản quy tắc phân nhóm hành khách."
+        tests:
+          - not_null
 
   - name: DimDistanceBand
-    description: "Bảng chiều Dải cự ly chuyến đi"
+    description: "Bảng chiều Phân nhóm dải cự ly di chuyển của chuyến đi taxi."
     columns:
       - name: '"DistanceBandKey"'
+        description: "Khóa chính dải cự ly chuyến đi (1-6, khóa 0 = Unknown)."
         tests:
           - unique
+          - not_null
+      - name: '"DistanceBandCode"'
+        description: "Mã định danh dải cự ly (DIST_0_1M, DIST_1_3M, DIST_3_10M, DIST_10_25M, DIST_OVER_25M, DIST_INVALID)."
+        tests:
+          - not_null
+      - name: '"DistanceBandName"'
+        description: "Tên diễn giải dải cự ly (Chặng rất ngắn <1 dặm, Chặng ngắn 1-3 dặm, Chặng trung bình 3-10 dặm, Chặng dài 10-25 dặm, Chặng rất dài >25 dặm)."
+        tests:
+          - not_null
+      - name: '"LowerBoundMiles"'
+        description: "Cự ly tối thiểu tính theo dặm (Miles)."
+        tests:
+          - not_null
+      - name: '"UpperBoundMiles"'
+        description: "Cự ly tối đa tính theo dặm (Miles)."
+        tests:
+          - not_null
+      - name: '"Unit"'
+        description: "Đơn vị tính cự ly ('miles')."
+        tests:
+          - not_null
+      - name: '"SortOrder"'
+        description: "Thứ tự sắp xếp dải cự ly trên báo cáo phân tích."
+        tests:
+          - not_null
+      - name: '"RuleVersion"'
+        description: "Phiên bản bộ quy tắc phân dải cự ly."
+        tests:
           - not_null

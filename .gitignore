@@ -120,4 +120,14 @@ RUN_*.bat
 # B04 (nbinh): ban thao bao cao phan Staging & DQ + doi soat tai chinh (san pham ban giao theo Ke hoach GD2)
 !docs/B04_BAO_CAO_STAGING_DQ.md
 !docs/TASK_T02_T03_RUNBOOK.md
+!docs/TASK_T04_RUNBOOK.md
+!docs/TASK_T04_RUNBOOK.html
+!docs/TASK_T04_RUNBOOK.pdf
 !docs/BENCHMARK_1M.md
+
+# Linux symlinks and internal Mage versioning
+/pipelines
+lab_project/.file_versions/
+!docs/dbt_docs/**
+!docs/dbt_docs/
+!docs/dbt_docs/*

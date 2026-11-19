@@ -34,7 +34,9 @@ def get_pg_conn():
 def run_cmd(cmd, cwd=DBT_DIR, desc=""):
     t0 = time.time()
     print(f"  [CMD] {desc}: {' '.join(cmd)}", flush=True)
-    res = subprocess.run(cmd, cwd=cwd)
+    env = os.environ.copy()
+    env['PGOPTIONS'] = (env.get('PGOPTIONS', '') + ' -c jit=off').strip()
+    res = subprocess.run(cmd, cwd=cwd, env=env)
     dur = round(time.time() - t0, 2)
     if res.returncode != 0:
         print(f"  [ERROR] Thất bại sau {dur}s", flush=True)
@@ -44,14 +46,15 @@ def run_cmd(cmd, cwd=DBT_DIR, desc=""):
 
 def prepare_ultra_fast_bulk_mode(conn):
     """
-    Tối ưu hóa tốc độ nạp 108M dòng:
-    1. Chuyển staging.raw_yellow_trips và dds."FactTaxiTrip" sang UNLOGGED (không tốn I/O ghi WAL).
+    Tối ưu hóa tốc độ nạp 108M dòng (Safe-LOGGED Bulk Mode):
+    1. Chỉ chuyển bảng tạm staging.raw_yellow_trips sang UNLOGGED; GIỮ NGUYÊN dds."FactTaxiTrip" ở chế độ LOGGED
+       (Crash-Safe từng file, không bao giờ gây đỉnh ghi đĩa ~60GB khi SET LOGGED ở cuối).
     2. Tạm gỡ 11 FKs, 2 Unique Constraints (PK TripKey MD5 + uq_fact_source_lineage) và 12 Indexes phụ.
     3. Chỉ giữ lại 1 index nhẹ trên (SourceFileName) để kiểm tra Resume và xóa nhanh theo file.
     """
-    print("\n[TURBO-MODE] Kích hoạt chế độ UNLOGGED & tạm gỡ PK/Indexes để nạp dbt nhanh gấp 15 lần...", flush=True)
+    print("\n[SAFE-BULK] Giữ FactTaxiTrip LOGGED (Crash-Safe) & tạm gỡ PK/Indexes/FKs để nạp nhanh an toàn...", flush=True)
     sql = """
-    -- 1. Gỡ 11 Foreign Keys
+    -- 1. Gỡ 11 Foreign Keys (cả tên chữ Hoa và chữ thường)
     ALTER TABLE dds."FactTaxiTrip" DROP CONSTRAINT IF EXISTS "FactTaxiTrip_PickupDateKey_fkey";
     ALTER TABLE dds."FactTaxiTrip" DROP CONSTRAINT IF EXISTS "FactTaxiTrip_DropoffDateKey_fkey";
     ALTER TABLE dds."FactTaxiTrip" DROP CONSTRAINT IF EXISTS "FactTaxiTrip_PickupTimeKey_fkey";
@@ -82,9 +85,8 @@ def prepare_ultra_fast_bulk_mode(conn):
     DROP INDEX IF EXISTS dds.idx_fact_distance_band;
     DROP INDEX IF EXISTS dds.idx_fact_usable_flags;
 
-    -- 4. Đặt UNLOGGED để PostgreSQL không ghi WAL khi dbt INSERT
+    -- 4. Chỉ đặt UNLOGGED cho bảng tạm staging; giữ FactTaxiTrip LOGGED để an toàn khi crash
     ALTER TABLE staging.raw_yellow_trips SET UNLOGGED;
-    ALTER TABLE dds."FactTaxiTrip" SET UNLOGGED;
 
     -- 5. Tạo 1 index siêu nhẹ trên SourceFileName để đối soát tức thì từng tháng
     CREATE INDEX IF NOT EXISTS idx_fact_temp_source_file ON dds."FactTaxiTrip" ("SourceFileName");
@@ -108,56 +110,89 @@ def prepare_ultra_fast_bulk_mode(conn):
 
 def restore_fact_indexes_and_fks(conn):
     """
-    Khôi phục chế độ LOGGED, Primary Key, Unique Constraint, 12 B-Tree Indexes và 11 Foreign Keys.
+    Khôi phục an toàn từng bước (mỗi lệnh COMMIT riêng lẻ, tự bỏ qua bước đã tồn tại khi Resume):
+    - Đảm bảo LOGGED (chỉ chạy nếu đang UNLOGGED)
+    - Primary Key, Unique Constraint, 12 B-Tree Indexes và 11 Foreign Keys (NOT VALID -> VALIDATE)
+    - Dùng maintenance_work_mem=512MB & 2 workers để tránh OOM trong Docker WSL2.
     """
-    print("\n[RESTORE] Đang khôi phục PK, Unique Constraint, 12 Indexes và 11 FKs trên dds.\"FactTaxiTrip\"...", flush=True)
+    print("\n[RESTORE] Đang khôi phục từng bước PK, Unique, 12 Indexes & 11 FKs trên dds.\"FactTaxiTrip\"...", flush=True)
     t0 = time.time()
-    sql = """
-    SET maintenance_work_mem = '1GB';
-    SET max_parallel_maintenance_workers = 4;
 
-    DROP INDEX IF EXISTS dds.idx_fact_temp_source_file;
+    def _run_step(label, stmt):
+        st = time.time()
+        with conn.cursor() as cur:
+            cur.execute("SET maintenance_work_mem = '512MB';")
+            cur.execute("SET max_parallel_maintenance_workers = 2;")
+            cur.execute(stmt)
+        conn.commit()
+        print(f"  [RESTORE-OK] {label} ({round(time.time() - st, 2)}s)", flush=True)
 
-    -- 1. Chuyển lại bảng Fact sang LOGGED bền vững
-    ALTER TABLE dds."FactTaxiTrip" SET LOGGED;
+    _run_step("Drop temp SourceFileName index", 'DROP INDEX IF EXISTS dds.idx_fact_temp_source_file;')
 
-    -- 2. Khôi phục Khóa chính (PK) và Unique Lineage
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_pkey" PRIMARY KEY ("TripKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT uq_fact_source_lineage UNIQUE ("SourceFileSHA256", "SourceRowNumber");
-
-    -- 3. Tạo lại 11 B-Tree Indexes trên FK và 1 Composite Index
-    CREATE INDEX IF NOT EXISTS idx_fact_pickup_date ON dds."FactTaxiTrip" ("PickupDateKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_dropoff_date ON dds."FactTaxiTrip" ("DropoffDateKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_pickup_time ON dds."FactTaxiTrip" ("PickupTimeKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_dropoff_time ON dds."FactTaxiTrip" ("DropoffTimeKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_pickup_zone ON dds."FactTaxiTrip" ("PickupZoneKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_dropoff_zone ON dds."FactTaxiTrip" ("DropoffZoneKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_vendor ON dds."FactTaxiTrip" ("VendorKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_payment ON dds."FactTaxiTrip" ("PaymentTypeKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_ratecode ON dds."FactTaxiTrip" ("RateCodeKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_passenger_grp ON dds."FactTaxiTrip" ("PassengerGroupKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_distance_band ON dds."FactTaxiTrip" ("DistanceBandKey");
-    CREATE INDEX IF NOT EXISTS idx_fact_usable_flags ON dds."FactTaxiTrip" ("IsAmountUsable", "IsTimeUsable", "IsDistanceUsable");
-
-    -- 4. Khôi phục 11 Foreign Keys (dùng NOT VALID rồi VALIDATE để tận dụng index vừa tạo)
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_PickupDateKey_fkey" FOREIGN KEY ("PickupDateKey") REFERENCES dds."DimDate"("DateKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_DropoffDateKey_fkey" FOREIGN KEY ("DropoffDateKey") REFERENCES dds."DimDate"("DateKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_PickupTimeKey_fkey" FOREIGN KEY ("PickupTimeKey") REFERENCES dds."DimTime"("TimeKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_DropoffTimeKey_fkey" FOREIGN KEY ("DropoffTimeKey") REFERENCES dds."DimTime"("TimeKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_PickupZoneKey_fkey" FOREIGN KEY ("PickupZoneKey") REFERENCES dds."DimZone"("ZoneKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_DropoffZoneKey_fkey" FOREIGN KEY ("DropoffZoneKey") REFERENCES dds."DimZone"("ZoneKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_VendorKey_fkey" FOREIGN KEY ("VendorKey") REFERENCES dds."DimVendor"("VendorKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_PaymentTypeKey_fkey" FOREIGN KEY ("PaymentTypeKey") REFERENCES dds."DimPaymentType"("PaymentTypeKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_RateCodeKey_fkey" FOREIGN KEY ("RateCodeKey") REFERENCES dds."DimRateCode"("RateCodeKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_PassengerGroupKey_fkey" FOREIGN KEY ("PassengerGroupKey") REFERENCES dds."DimPassengerGroup"("PassengerGroupKey");
-    ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_DistanceBandKey_fkey" FOREIGN KEY ("DistanceBandKey") REFERENCES dds."DimDistanceBand"("DistanceBandKey");
-
-    ANALYZE dds."FactTaxiTrip";
-    """
+    # 1. Chỉ chuyển LOGGED nếu hiện tại đang UNLOGGED
     with conn.cursor() as cur:
-        cur.execute(sql)
+        cur.execute("SELECT relpersistence FROM pg_class WHERE oid = 'dds.\"FactTaxiTrip\"'::regclass;")
+        relp = cur.fetchone()[0]
     conn.commit()
-    print(f"[RESTORE] Hoàn tất dựng PK, Index & FK trong {round(time.time() - t0, 2)}s.", flush=True)
+    if relp != 'p':
+        _run_step("ALTER TABLE FactTaxiTrip SET LOGGED", 'ALTER TABLE dds."FactTaxiTrip" SET LOGGED;')
+    else:
+        print("  [RESTORE-SKIP] dds.\"FactTaxiTrip\" đã ở trạng thái LOGGED (relpersistence='p').", flush=True)
+
+    # Lấy danh sách constraint đã tồn tại để hỗ trợ Resume an toàn
+    with conn.cursor() as cur:
+        cur.execute("SELECT lower(conname) FROM pg_constraint WHERE conrelid = 'dds.\"FactTaxiTrip\"'::regclass;")
+        existing_cons = {r[0] for r in cur.fetchall()}
+    conn.commit()
+
+    # 2. Khôi phục PK và Unique Lineage
+    if 'facttaxitrip_pkey' not in existing_cons:
+        _run_step('ADD PRIMARY KEY ("TripKey")', 'ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "FactTaxiTrip_pkey" PRIMARY KEY ("TripKey");')
+    if 'uq_fact_source_lineage' not in existing_cons:
+        _run_step('ADD UNIQUE (SourceFileSHA256, SourceRowNumber)', 'ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT uq_fact_source_lineage UNIQUE ("SourceFileSHA256", "SourceRowNumber");')
+
+    # 3. Tạo lại 12 B-Tree Indexes (mỗi index 1 transaction riêng biệt)
+    indexes = [
+        ("idx_fact_pickup_date", '("PickupDateKey")'),
+        ("idx_fact_dropoff_date", '("DropoffDateKey")'),
+        ("idx_fact_pickup_time", '("PickupTimeKey")'),
+        ("idx_fact_dropoff_time", '("DropoffTimeKey")'),
+        ("idx_fact_pickup_zone", '("PickupZoneKey")'),
+        ("idx_fact_dropoff_zone", '("DropoffZoneKey")'),
+        ("idx_fact_vendor", '("VendorKey")'),
+        ("idx_fact_payment", '("PaymentTypeKey")'),
+        ("idx_fact_ratecode", '("RateCodeKey")'),
+        ("idx_fact_passenger_grp", '("PassengerGroupKey")'),
+        ("idx_fact_distance_band", '("DistanceBandKey")'),
+        ("idx_fact_usable_flags", '("IsAmountUsable", "IsTimeUsable", "IsDistanceUsable")'),
+    ]
+    for idx_name, cols in indexes:
+        _run_step(f"CREATE INDEX {idx_name}", f'CREATE INDEX IF NOT EXISTS {idx_name} ON dds."FactTaxiTrip" {cols};')
+
+    # 4. Khôi phục 11 Foreign Keys (mỗi FK 1 transaction riêng)
+    fks = [
+        ("FactTaxiTrip_PickupDateKey_fkey", '"PickupDateKey"', 'dds."DimDate"("DateKey")'),
+        ("FactTaxiTrip_DropoffDateKey_fkey", '"DropoffDateKey"', 'dds."DimDate"("DateKey")'),
+        ("FactTaxiTrip_PickupTimeKey_fkey", '"PickupTimeKey"', 'dds."DimTime"("TimeKey")'),
+        ("FactTaxiTrip_DropoffTimeKey_fkey", '"DropoffTimeKey"', 'dds."DimTime"("TimeKey")'),
+        ("FactTaxiTrip_PickupZoneKey_fkey", '"PickupZoneKey"', 'dds."DimZone"("ZoneKey")'),
+        ("FactTaxiTrip_DropoffZoneKey_fkey", '"DropoffZoneKey"', 'dds."DimZone"("ZoneKey")'),
+        ("FactTaxiTrip_VendorKey_fkey", '"VendorKey"', 'dds."DimVendor"("VendorKey")'),
+        ("FactTaxiTrip_PaymentTypeKey_fkey", '"PaymentTypeKey"', 'dds."DimPaymentType"("PaymentTypeKey")'),
+        ("FactTaxiTrip_RateCodeKey_fkey", '"RateCodeKey"', 'dds."DimRateCode"("RateCodeKey")'),
+        ("FactTaxiTrip_PassengerGroupKey_fkey", '"PassengerGroupKey"', 'dds."DimPassengerGroup"("PassengerGroupKey")'),
+        ("FactTaxiTrip_DistanceBandKey_fkey", '"DistanceBandKey"', 'dds."DimDistanceBand"("DistanceBandKey")'),
+    ]
+    for fk_name, col, ref_target in fks:
+        if fk_name.lower() not in existing_cons:
+            _run_step(
+                f"ADD & VALIDATE FK {fk_name}",
+                f'ALTER TABLE dds."FactTaxiTrip" ADD CONSTRAINT "{fk_name}" FOREIGN KEY ({col}) REFERENCES {ref_target} NOT VALID; '
+                f'ALTER TABLE dds."FactTaxiTrip" VALIDATE CONSTRAINT "{fk_name}";'
+            )
+
+    _run_step('ANALYZE dds."FactTaxiTrip"', 'ANALYZE dds."FactTaxiTrip";')
+    print(f"[RESTORE] Hoàn tất toàn bộ PK, 12 Indexes & 11 FKs trong {round(time.time() - t0, 2)}s.", flush=True)
 
 
 def generate_s03_reports(conn):
@@ -286,6 +321,128 @@ def generate_s03_reports(conn):
     print(f"[REPORT] Đã xuất thành công:\n  - {manifest_csv_path}\n  - {report_path}", flush=True)
 
 
+
+def prepare_dependencies():
+    print("\n[STEP 1] Kiểm tra & Khởi tạo Zones, Seeds, Staging Views và 8 Dimensions...", flush=True)
+    load_and_ingest_zones()
+    run_cmd(['dbt', 'seed', '--full-refresh', '--profiles-dir', '.'], desc="dbt seed")
+    run_cmd(['dbt', 'run', '--select', 'staging', 'marts.dims', '--threads', '1', '--profiles-dir', '.'], desc="dbt staging & 8 dims")
+
+
+
+def plan_files(conn, df_manifest):
+    files_to_process = []
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        for _, row in df_manifest.iterrows():
+            fname = row['file_name']
+            fsha = row['file_sha256']
+            expected_total = int(row['total_rows'])
+
+            cur.execute("""
+                SELECT COUNT(*) AS cnt FROM dds."FactTaxiTrip"
+                WHERE "SourceFileName" = %s
+            """, (fname,))
+            fact_cnt = int(cur.fetchone()['cnt'])
+
+            cur.execute("""
+                SELECT COUNT(*) AS q_cnt FROM staging.quarantine
+                WHERE source_file_name = %s
+            """, (fname,))
+            quar_cnt = int(cur.fetchone()['q_cnt'])
+
+            if fact_cnt + quar_cnt == expected_total and expected_total > 0:
+                cur.execute("""
+                    UPDATE meta.file_manifest
+                    SET load_status = 'SUCCESS',
+                        staged_rows = %s,
+                        fact_rows = %s,
+                        quarantine_rows = %s,
+                        last_updated_at = CURRENT_TIMESTAMP
+                    WHERE file_name = %s
+                """, (expected_total, fact_cnt, quar_cnt, fname))
+                print(f"  [RESUME-SKIP] {fname} đã có đủ {fact_cnt:,} dòng trong FactTaxiTrip.", flush=True)
+            else:
+                files_to_process.append(row)
+    conn.commit()
+
+    return files_to_process
+
+
+def process_file(conn, row, idx, total_files):
+    fname = row['file_name']
+    fsha = row['file_sha256']
+    expected_total = int(row['total_rows'])
+    f_t0 = time.time()
+    print(f"\n--- [{idx}/{total_files}] ĐANG XỬ LÝ: {fname} ({expected_total:,} dòng) ---", flush=True)
+
+    # 1. Làm sạch bảng staging và xóa dòng dở dang (nếu có) của file này trong Fact
+    with conn.cursor() as cur:
+        cur.execute("TRUNCATE TABLE staging.raw_yellow_trips;")
+        cur.execute('DELETE FROM dds."FactTaxiTrip" WHERE "SourceFileName" = %s;', (fname,))
+    conn.commit()
+
+    # 2. Nạp file hiện tại vào staging.raw_yellow_trips
+    single_df = pd.DataFrame([row])
+    single_df['action_status'] = 'PENDING'
+    export_parquet_batches_to_staging(single_df, batch_size=100000, force_reload=True)
+
+    # 2b. Cập nhật thống kê staging NGAY sau khi nạp. Nếu không, dbt lên kế hoạch với thống kê của
+    #     file trước (autoanalyze chạy trễ ~30s) -> ước lượng ~0 dòng cho source_file_name mới
+    #     -> chọn kế hoạch kém: ~840s/file thay vì ~45s/file (đo thực tế 18/11).
+    with conn.cursor() as cur:
+        cur.execute("ANALYZE staging.raw_yellow_trips;")
+    conn.commit()
+
+    # 3. Chạy dbt FactTaxiTrip ở chế độ s03_fast_append (không tạo bảng tạm, INSERT trực tiếp vào bảng UNLOGGED)
+    dbt_vars = f'{{"source_file_name": "{fname}", "s03_fast_append": true}}'
+    run_cmd(
+        ['dbt', 'run', '--select', 'FactTaxiTrip', '--vars', dbt_vars, '--profiles-dir', '.'],
+        desc=f"Fast Append FactTaxiTrip cho {fname}"
+    )
+
+    # 4. Kiểm tra số dòng vừa nạp (nếu lệch so với expected_total mới gọi load_quarantine để tiết kiệm thời gian)
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("""
+            SELECT COUNT(*) AS fact_cnt
+            FROM dds."FactTaxiTrip"
+            WHERE "SourceFileName" = %s
+        """, (fname,))
+        fact_cnt = int(cur.fetchone()['fact_cnt'])
+        quar_cnt = 0
+
+        if fact_cnt != expected_total:
+            run_cmd(
+                ['dbt', 'run-operation', 'load_quarantine', '--args', '{prune_stale: false}', '--profiles-dir', '.'],
+                desc=f"Quarantine check cho {fname}"
+            )
+            cur.execute("""
+                SELECT COUNT(*) AS quar_cnt
+                FROM staging.quarantine
+                WHERE source_file_name = %s
+            """, (fname,))
+            quar_cnt = int(cur.fetchone()['quar_cnt'])
+
+        if fact_cnt + quar_cnt != expected_total:
+            raise RuntimeError(
+                f"ĐỐI SOÁT LỆCH trên {fname}: Footer={expected_total} != Fact({fact_cnt}) + Quarantine({quar_cnt})"
+            )
+
+        final_status = 'SUCCESS' if quar_cnt == 0 else 'COMPLETED_WITH_QUARANTINE'
+        cur.execute("""
+            UPDATE meta.file_manifest
+            SET load_status = %s,
+                fact_rows = %s,
+                quarantine_rows = %s,
+                last_updated_at = CURRENT_TIMESTAMP
+            WHERE file_name = %s
+        """, (final_status, fact_cnt, quar_cnt, fname))
+    conn.commit()
+
+    f_dur = round(time.time() - f_t0, 2)
+    print(f"--- [HOÀN TẤT {idx}/{total_files}] {fname}: Fact={fact_cnt:,} dòng trong {f_dur}s ---", flush=True)
+
+    return {"file_name": fname, "status": final_status, "footer_rows": expected_total, "fact_rows": fact_cnt, "quarantine_rows": quar_cnt, "elapsed_seconds": f_dur}
+
 def main():
     parser = argparse.ArgumentParser(description="Task S03: Nạp mở rộng 36 tháng siêu tốc")
     parser.add_argument("--file-pattern", default="yellow_tripdata_*.parquet")
@@ -299,49 +456,14 @@ def main():
     print("  TASK S03 (STINH): NẠP MỞ RỘNG 36 THÁNG SIÊU TỐC (TURBO BULK MODE) ", flush=True)
     print("=" * 75, flush=True)
 
-    print("\n[STEP 1] Kiểm tra & Khởi tạo Zones, Seeds, Staging Views và 8 Dimensions...", flush=True)
-    load_and_ingest_zones()
-    run_cmd(['dbt', 'seed', '--full-refresh', '--profiles-dir', '.'], desc="dbt seed")
-    run_cmd(['dbt', 'run', '--select', 'staging', 'marts.dims', '--threads', '1', '--profiles-dir', '.'], desc="dbt staging & 8 dims")
+    prepare_dependencies()
 
     print("\n[STEP 2] Quét danh mục Parquet vào meta.file_manifest...", flush=True)
     df_manifest = scan_and_register_manifest(file_pattern=args.file_pattern, max_files=args.max_files)
 
     conn = get_pg_conn()
     try:
-        files_to_process = []
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            for _, row in df_manifest.iterrows():
-                fname = row['file_name']
-                fsha = row['file_sha256']
-                expected_total = int(row['total_rows'])
-
-                cur.execute("""
-                    SELECT COUNT(*) AS cnt FROM dds."FactTaxiTrip"
-                    WHERE "SourceFileName" = %s
-                """, (fname,))
-                fact_cnt = int(cur.fetchone()['cnt'])
-
-                cur.execute("""
-                    SELECT COUNT(*) AS q_cnt FROM staging.quarantine
-                    WHERE source_file_name = %s
-                """, (fname,))
-                quar_cnt = int(cur.fetchone()['q_cnt'])
-
-                if fact_cnt + quar_cnt == expected_total and expected_total > 0:
-                    cur.execute("""
-                        UPDATE meta.file_manifest
-                        SET load_status = 'SUCCESS',
-                            staged_rows = %s,
-                            fact_rows = %s,
-                            quarantine_rows = %s,
-                            last_updated_at = CURRENT_TIMESTAMP
-                        WHERE file_name = %s
-                    """, (expected_total, fact_cnt, quar_cnt, fname))
-                    print(f"  [RESUME-SKIP] {fname} đã có đủ {fact_cnt:,} dòng trong FactTaxiTrip.", flush=True)
-                else:
-                    files_to_process.append(row)
-        conn.commit()
+        files_to_process = plan_files(conn, df_manifest)
 
         if files_to_process:
             if not args.skip_index_drop:
@@ -349,82 +471,14 @@ def main():
 
             total_files = len(files_to_process)
             for idx, row in enumerate(files_to_process, start=1):
-                fname = row['file_name']
-                fsha = row['file_sha256']
-                expected_total = int(row['total_rows'])
-                f_t0 = time.time()
-                print(f"\n--- [{idx}/{total_files}] ĐANG XỬ LÝ: {fname} ({expected_total:,} dòng) ---", flush=True)
-
-                # 1. Làm sạch bảng staging và xóa dòng dở dang (nếu có) của file này trong Fact
-                with conn.cursor() as cur:
-                    cur.execute("TRUNCATE TABLE staging.raw_yellow_trips;")
-                    cur.execute('DELETE FROM dds."FactTaxiTrip" WHERE "SourceFileName" = %s;', (fname,))
-                conn.commit()
-
-                # 2. Nạp file hiện tại vào staging.raw_yellow_trips
-                single_df = pd.DataFrame([row])
-                single_df['action_status'] = 'PENDING'
-                export_parquet_batches_to_staging(single_df, batch_size=100000, force_reload=True)
-
-                # 2b. Cập nhật thống kê staging NGAY sau khi nạp. Nếu không, dbt lên kế hoạch với thống kê của
-                #     file trước (autoanalyze chạy trễ ~30s) -> ước lượng ~0 dòng cho source_file_name mới
-                #     -> chọn kế hoạch kém: ~840s/file thay vì ~45s/file (đo thực tế 18/11).
-                with conn.cursor() as cur:
-                    cur.execute("ANALYZE staging.raw_yellow_trips;")
-                conn.commit()
-
-                # 3. Chạy dbt FactTaxiTrip ở chế độ s03_fast_append (không tạo bảng tạm, INSERT trực tiếp vào bảng UNLOGGED)
-                dbt_vars = f'{{"source_file_name": "{fname}", "s03_fast_append": true}}'
-                run_cmd(
-                    ['dbt', 'run', '--select', 'FactTaxiTrip', '--vars', dbt_vars, '--profiles-dir', '.'],
-                    desc=f"Fast Append FactTaxiTrip cho {fname}"
-                )
-
-                # 4. Kiểm tra số dòng vừa nạp (nếu lệch so với expected_total mới gọi load_quarantine để tiết kiệm thời gian)
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        SELECT COUNT(*) AS fact_cnt
-                        FROM dds."FactTaxiTrip"
-                        WHERE "SourceFileName" = %s
-                    """, (fname,))
-                    fact_cnt = int(cur.fetchone()['fact_cnt'])
-                    quar_cnt = 0
-
-                    if fact_cnt != expected_total:
-                        run_cmd(
-                            ['dbt', 'run-operation', 'load_quarantine', '--args', '{prune_stale: false}', '--profiles-dir', '.'],
-                            desc=f"Quarantine check cho {fname}"
-                        )
-                        cur.execute("""
-                            SELECT COUNT(*) AS quar_cnt
-                            FROM staging.quarantine
-                            WHERE source_file_name = %s
-                        """, (fname,))
-                        quar_cnt = int(cur.fetchone()['quar_cnt'])
-
-                    if fact_cnt + quar_cnt != expected_total:
-                        raise RuntimeError(
-                            f"ĐỐI SOÁT LỆCH trên {fname}: Footer={expected_total} != Fact({fact_cnt}) + Quarantine({quar_cnt})"
-                        )
-
-                    final_status = 'SUCCESS' if quar_cnt == 0 else 'COMPLETED_WITH_QUARANTINE'
-                    cur.execute("""
-                        UPDATE meta.file_manifest
-                        SET load_status = %s,
-                            fact_rows = %s,
-                            quarantine_rows = %s,
-                            last_updated_at = CURRENT_TIMESTAMP
-                        WHERE file_name = %s
-                    """, (final_status, fact_cnt, quar_cnt, fname))
-                conn.commit()
-
-                f_dur = round(time.time() - f_t0, 2)
-                print(f"--- [HOÀN TẤT {idx}/{total_files}] {fname}: Fact={fact_cnt:,} dòng trong {f_dur}s ---", flush=True)
+                process_file(conn, row, idx, total_files)
 
             if not args.skip_index_drop:
                 restore_fact_indexes_and_fks(conn)
         else:
             print("\n[INFO] Toàn bộ 36 file đã được nạp đầy đủ vào FactTaxiTrip!", flush=True)
+            if not args.skip_index_drop:
+                restore_fact_indexes_and_fks(conn)
 
         generate_s03_reports(conn)
 

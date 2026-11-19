@@ -16,11 +16,7 @@ def dbt_staging_and_dims(*args, **kwargs):
     - staging.stg_trips_flagged (áp dụng toàn bộ DQ rules B02)
     - dds.DimDate, DimTime, DimZone, DimVendor, DimPaymentType, DimRateCode, DimPassengerGroup, DimDistanceBand
     """
-    root = (
-        Path(__file__).resolve().parents[2]
-        if '__file__' in globals()
-        else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
-    )
+    root = Path(__file__).resolve().parents[2] if '__file__' in globals() else (Path('/home/src') if Path('/home/src/lab_project').exists() else Path.cwd())
     dbt_dir = root / 'dbt_project'
 
     t0 = time.time()

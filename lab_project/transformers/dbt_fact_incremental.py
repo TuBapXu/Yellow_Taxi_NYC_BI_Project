@@ -1,5 +1,4 @@
 import time
-import json
 import subprocess
 from pathlib import Path
 
@@ -17,19 +16,12 @@ def dbt_fact_incremental(*args, **kwargs):
     - 13 Measures & 7 DQ Flags
     - Chiến lược delete+insert theo TripKey đảm bảo tính Idempotent
     """
-    root = (
-        Path(__file__).resolve().parents[2]
-        if '__file__' in globals()
-        else (Path('/home/src') if Path('/home/src/dbt_project').exists() else Path.cwd())
-    )
+    root = Path(__file__).resolve().parents[2] if '__file__' in globals() else (Path('/home/src') if Path('/home/src/lab_project').exists() else Path.cwd())
     dbt_dir = root / 'dbt_project'
 
     t0 = time.time()
-    target_file = kwargs.get('target_file') or kwargs.get('source_file_name')
-    print(f"[START] Đang chạy dbt run --select FactTaxiTrip (target_file={target_file})...")
+    print("[START] Đang chạy dbt run --select FactTaxiTrip...")
     cmd = ['dbt', 'run', '--select', 'FactTaxiTrip']
-    if target_file:
-        cmd.extend(['--vars', json.dumps({'source_file_name': str(target_file)})])
     res = subprocess.run(cmd, cwd=dbt_dir, capture_output=True, text=True)
     duration = round(time.time() - t0, 2)
 
